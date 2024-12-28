@@ -23,7 +23,7 @@ print(response)
 start_time = time.time()
 
 for tier in tiers:
-    print(f'tier:{tier}, time:{(time.time()-start_time)/60}')
+    print(f'***** tier:{tier}, time:{(time.time()-start_time)/60} *****')
     match_details = []  # one set per tier
     url_leaderboard_first_page = f"https://na1.api.riotgames.com/lol/league/v4/entries/RANKED_SOLO_5x5/{tier}/I?page=1"
     response_leaderboard_first_page = requests.get(url_leaderboard_first_page, headers=headers)
@@ -33,15 +33,17 @@ for tier in tiers:
     response_leaderboard_last_page = requests.get(url_leaderboard_last_page, headers=headers)
     summoners_last_page = response_leaderboard_last_page.json()
 
-    sampled_summoners_first_page = random.sample(summoners_first_page, min(len(summoners_first_page), 5))
-    sampled_summoners_last_page = random.sample(summoners_last_page, min(len(summoners_last_page), 5))
+    sampled_summoners_first_page = random.sample(summoners_first_page, min(len(
+        summoners_first_page), 10_000))
+    sampled_summoners_last_page = random.sample(summoners_last_page, min(len(summoners_last_page), 10_000))
 
     sampled_summoners = sampled_summoners_first_page + sampled_summoners_last_page
 
     i = 0
     for summoner in sampled_summoners:
         i += 1
-        print(f"{i} out of {len(sampled_summoners)}, time:{(time.time()-start_time)/60}")
+        if i % 1000 == 0:
+            print(f"{i} out of {len(sampled_summoners)}, time:{(time.time()-start_time)/60}")
         summoner_id = summoner['summonerId']
         url_puuid = f"https://na1.api.riotgames.com/lol/summoner/v4/summoners/{summoner_id}"
         response_puuid = requests.get(url_puuid, headers=headers)
