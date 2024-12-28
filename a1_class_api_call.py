@@ -47,10 +47,11 @@ for tier in tiers:
         response_puuid = requests.get(url_puuid, headers=headers)
         puuid = response_puuid.json()['puuid']
 
-        start_time = int(time.mktime(time.strptime("2023-01-01", "%Y-%m-%d")))
-        end_time = int(time.mktime(time.strptime("2024-12-31", "%Y-%m-%d")))
+        start_date = int(time.mktime(time.strptime("2023-01-01", "%Y-%m-%d")))
+        end_date = int(time.mktime(time.strptime("2024-12-31", "%Y-%m-%d")))
 
-        url_matchlist = f"https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?startTime={start_time}&endTime={end_time}"
+        url_matchlist = f"https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/" \
+                        f"{puuid}/ids?startTime={start_date}&endTime={end_date}"
         response_matchlist = requests.get(url_matchlist, headers=headers)
         match_ids = response_matchlist.json()
 
@@ -64,5 +65,5 @@ for tier in tiers:
     match_df = pd.DataFrame(match_details)
     parquet_filename = dir_base + f"data\class_raw_data\{tier.lower()}_match_details.parquet"
     match_df.to_parquet(parquet_filename)
-    print(f"Saved {parquet_filename}")
+    print(f"Saved {parquet_filename}, time:{(time.time()-start_time)/60}")
 
