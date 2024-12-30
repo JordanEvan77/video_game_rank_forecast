@@ -17,7 +17,8 @@ print(response)
 
 overall_start_time = time.time()
 
-for tier in tiers:
+for tier in tiers: #TODO: Gather all summoners from all tiers first! Save that out, Then begin
+    # pulling the info
     print(f'***** tier:{tier}, time:{(time.time() - overall_start_time) / 60:.2f} minutes *****')
     match_details = []
     summoners_all_pages = []
@@ -41,7 +42,8 @@ for tier in tiers:
     i = 0
     for summoner in sampled_summoners:
         i += 1
-        print(f"{i} out of {len(sampled_summoners)}, time:{(time.time() - overall_start_time) / 60:.2f} minutes")
+        print(f"tier: {tier}, {i} out of {len(sampled_summoners)}, time"
+              f":{(time.time() - overall_start_time) / 60:.2f} minutes")
         summoner_id = summoner['summonerId']
         url_puuid = f"https://na1.api.riotgames.com/lol/summoner/v4/summoners/{summoner_id}"
         response_puuid = requests.get(url_puuid, headers=headers)
@@ -65,3 +67,5 @@ for tier in tiers:
     parquet_filename = dir_base + f"data/class_raw_data/{tier.lower()}_match_details.parquet"
     match_df.to_parquet(parquet_filename)
     print(f"Saved {parquet_filename}, time:{(time.time() - overall_start_time) / 60:.2f} minutes")
+
+print('complete!')
