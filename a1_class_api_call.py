@@ -19,6 +19,8 @@ overall_start_time = time.time()
 
 for tier in tiers: #TODO: Gather all summoners from all tiers first! Save that out, Then begin
     # pulling the info
+    #TODO: Since key is 24 hr, may need to save summoner tags somehow? And pick up where we left
+    # off?
     print(f'***** tier:{tier}, time:{(time.time() - overall_start_time) / 60:.2f} minutes *****')
     match_details = []
     summoners_all_pages = []
