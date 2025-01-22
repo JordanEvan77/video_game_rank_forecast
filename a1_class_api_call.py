@@ -23,7 +23,7 @@ if str(response) == '<Response [403]>':
 
 overall_start_time = time.time()
 
-def get_summoner_list(sample_size, force=True):
+def get_summoner_list(sample_size, force):
     # check if list exists and has same size
     final_smapled_df = pd.DataFrame()
     sample_id_path = dir_base + f"data/all_tier_summoner_id_size_{sample_size}.csv"
@@ -67,7 +67,7 @@ def get_summoner_list(sample_size, force=True):
 
     final_cols = [i for i in final_smapled_df.columns if i != 'leagueId']
     final_smapled_df = final_smapled_df[final_cols]
-    final_smapled_df = final_smapled_df.rename(column={'summonerId':'summoner_id',
+    final_smapled_df = final_smapled_df.rename(columns={'summonerId':'summoner_id',
                                                        'leaguePoints':'LP'})
     final_smapled_df.to_csv(sample_id_path, index=False)
     return final_smapled_df
@@ -91,8 +91,8 @@ def get_match_details(sampled_df, run_date):
             sampled_df_tier = sampled_df_tier[~sampled_df_tier['tier'].isin(old_summoners_id)]
 
         i = 0
-        sampled_df_tier_list = sampled_df_tier.summoner_id.unique()
-        for summoner in sampled_df_tier_list.iterrows():
+        sampled_df_tier_list = list(sampled_df_tier.summoner_id.unique())
+        for summoner in sampled_df_tier_list:
             i += 1
             print(f"tier: {tier}, {i} out of {sampled_df_tier.shape[0]}, time"
                   f":{(time.time() - overall_start_time) / 60:.2f} minutes")
@@ -126,7 +126,7 @@ def get_match_details(sampled_df, run_date):
 
 print('complete!')
 if __name__ == '__main__':
-    sampled_df = get_summoner_list(sample_size=10)
+    sampled_df = get_summoner_list(sample_size=10, force=False)
     run_date = datetime.datetime.today().strftime("%m-%d-%Y")
 
     get_match_details(sampled_df, run_date)
