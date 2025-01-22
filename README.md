@@ -1,6 +1,7 @@
 # video_game_rank_forecast
 League Of Legends is one of the most popular MOBA games of today. Everyone is pushing to climb the ranks and be the best. Building a regression based model will enable me to forecast final placement, and a classification model will also enable me to analyze key factors for victory.
 
+The regression model can be used to calculate total placement climbed (what rank on the server did they achieve?), and categorical for game to game win and overall final placement.
 
 The API is publically accessible, so I will begin by pulling in data for individual players there, and go through cleaning. 
 
