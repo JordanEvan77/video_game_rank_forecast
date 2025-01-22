@@ -57,8 +57,8 @@ def get_summoner_list(sample_size, force):
             time.sleep(1)
 
             #TODO: use a temporary break, remove:
-            if page == sample_size:
-                break
+            #if page == sample_size:
+                #break
 
         sampled_summoners = random.sample(summoners_all_pages, min(len(summoners_all_pages),
                                                                    sample_size))
@@ -74,7 +74,7 @@ def get_summoner_list(sample_size, force):
 
 
 
-def get_match_details(sampled_df, run_date):
+def get_match_details(sampled_df, run_date, force=True):
     old_check = 'n'
     os.makedirs(dir_base + f"data/class_raw_data_{run_date}", exist_ok=True)
     for tier in tiers_list:
@@ -83,7 +83,7 @@ def get_match_details(sampled_df, run_date):
 
         parquet_filename = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}_match_details" \
                                       f"_{run_date}.parquet"
-        if os.path.exists(parquet_filename):
+        if os.path.exists(parquet_filename) and force != True:
             print('read in previous version')
             old_check = 'y'
             old_match_df = pd.read_parquet(parquet_filename)
@@ -94,7 +94,7 @@ def get_match_details(sampled_df, run_date):
         sampled_df_tier_list = list(sampled_df_tier.summoner_id.unique())
         for summoner in sampled_df_tier_list:
             i += 1
-            print(f"tier: {tier}, {i} out of {sampled_df_tier.shape[0]}, time"
+            print(f"Grabbing tier: {tier}, {i} out of {sampled_df_tier.shape[0]}, time"
                   f":{(time.time() - overall_start_time) / 60:.2f} minutes")
             summoner_id = summoner
             url_puuid = f"https://na1.api.riotgames.com/lol/summoner/v4/summoners/{summoner_id}"
@@ -109,13 +109,22 @@ def get_match_details(sampled_df, run_date):
             match_ids = response_matchlist.json()
 
             url_match = f"https://americas.api.riotgames.com/lol/match/v5/matches/"
+            print('checking matches')
             for match_id in match_ids:
-                response_match = requests.get(f"{url_match}{match_id}", headers=headers)
-                match_details.append(response_match.json())
+                #print(match_id)
+                try:
+                    response_match = requests.get(f"{url_match}{match_id}", headers=headers)
+                    match_details.append(response_match.json())
+                except:
+                    print('Didnt connect')
+                    time.sleep(10)
+                    response_match = requests.get(f"{url_match}{match_id}", headers=headers)
+                    match_details.append(response_match.json())
                 time.sleep(1)
 
 
         # save out!
+        print('stacking DF for summoner')
         match_df = pd.DataFrame(match_details)
         if old_check == 'y':
             match_df = pd.concat([old_match_df, match_df])
@@ -126,7 +135,7 @@ def get_match_details(sampled_df, run_date):
 
 print('complete!')
 if __name__ == '__main__':
-    sampled_df = get_summoner_list(sample_size=10, force=False)
+    sampled_df = get_summoner_list(sample_size=10_000, force=False)
     run_date = datetime.datetime.today().strftime("%m-%d-%Y")
 
     get_match_details(sampled_df, run_date)
