@@ -78,11 +78,12 @@ def get_match_details(sampled_df, run_date, force=True):
     old_check = 'n'
     os.makedirs(dir_base + f"data/class_raw_data_{run_date}", exist_ok=True)
     for tier in tiers_list:
+        min_id, max_id = 0, 1000
         # get reduced list
         sampled_df_tier = sampled_df[sampled_df['tier'] == tier]
 
-        parquet_filename = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}_match_details" \
-                                      f"_{run_date}.parquet"
+        parquet_filename = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}/" \
+        f"{tier.lower()}_match_details_{run_date}_{min_id}_{max_id}.parquet"
         if os.path.exists(parquet_filename) and force != True:
             print('read in previous version')
             old_check = 'y'
@@ -123,19 +124,22 @@ def get_match_details(sampled_df, run_date, force=True):
                 time.sleep(1)
 
 
-        # save out!
-        print('stacking DF for summoner')
-        match_df = pd.DataFrame(match_details)
-        if old_check == 'y':
-            match_df = pd.concat([old_match_df, match_df])
+            # save out!
+            if i % 1000 ==0:
+                print('stacking DF for summoner')
+                match_df = pd.DataFrame(match_details)
+                if old_check == 'y':
+                    match_df = pd.concat([old_match_df, match_df])
 
-        match_df.to_parquet(parquet_filename)
-        print(f"Saved {parquet_filename}, time:{(time.time() - overall_start_time) / 60:.2f} minutes")
+                match_df.to_parquet(parquet_filename)
+                print(f"Saved {parquet_filename}, time:{(time.time() - overall_start_time) / 60:.2f} minutes")
+                min_id += 1000
+                max_id += 1000
 
 
 print('complete!')
 if __name__ == '__main__':
     sampled_df = get_summoner_list(sample_size=10_000, force=False)
     run_date = datetime.datetime.today().strftime("%m-%d-%Y")
-
+    run_date = "01-23-25"
     get_match_details(sampled_df, run_date)
