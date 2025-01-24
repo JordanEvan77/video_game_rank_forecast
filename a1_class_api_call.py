@@ -78,6 +78,7 @@ def get_match_details(sampled_df, run_date, force=True):
     old_check = 'n'
     os.makedirs(dir_base + f"data/class_raw_data_{run_date}", exist_ok=True)
     for tier in tiers_list:
+        os.makedirs(dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}", exist_ok=True)
         min_id, max_id = 0, 1000
         # get reduced list
         sampled_df_tier = sampled_df[sampled_df['tier'] == tier]
