@@ -106,6 +106,7 @@ def get_match_details(sampled_df, run_date, force=True):
             start_date = int(time.mktime(time.strptime("2023-01-01", "%Y-%m-%d")))
             end_date = int(time.mktime(time.strptime("2024-12-31", "%Y-%m-%d")))
 
+            print('grabbing match list')
             url_matchlist = f"https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?startTime={start_date}&endTime={end_date}"
             response_matchlist = requests.get(url_matchlist, headers=headers)
             match_ids = response_matchlist.json()
@@ -120,8 +121,11 @@ def get_match_details(sampled_df, run_date, force=True):
                 except:
                     print('Didnt connect')
                     time.sleep(10)
-                    response_match = requests.get(f"{url_match}{match_id}", headers=headers)
-                    match_details.append(response_match.json())
+                    try:
+                        response_match = requests.get(f"{url_match}{match_id}", headers=headers)
+                        match_details.append(response_match.json())
+                    except:
+                        match_details.append([np.nan])# does this have to be shaped different?
                 time.sleep(1)
 
 
