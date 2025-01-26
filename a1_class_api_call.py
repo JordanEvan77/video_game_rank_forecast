@@ -117,7 +117,11 @@ def get_match_details(sampled_df, run_date, force=True):
                 #print(match_id)
                 try:
                     response_match = requests.get(f"{url_match}{match_id}", headers=headers)
-                    match_details.append(response_match.json())
+                    dict_temp_match = response_match.json()
+                    dict_temp_match['summoner_id'] = summoner_id
+                    match_details.append(dict_temp_match) # include summonerid
+
+                #some failures, catch below
                 except:
                     print('Didnt connect')
                     time.sleep(10)
@@ -146,5 +150,5 @@ print('complete!')
 if __name__ == '__main__':
     sampled_df = get_summoner_list(sample_size=10_000, force=False)
     run_date = datetime.datetime.today().strftime("%m-%d-%Y")
-    run_date = "01-24-2025"
+    #run_date = "01-24-2025"
     get_match_details(sampled_df, run_date, force=False)
