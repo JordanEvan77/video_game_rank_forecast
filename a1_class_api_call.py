@@ -11,7 +11,6 @@ import os
 
 tiers_list = ['IRON', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND']
 #, 'MASTER', 'GRANDMASTER', 'CHALLENGER']  # All tiers
-match_details = []
 
 # Test API
 url = 'https://na1.api.riotgames.com/lol/league/v4/entries/RANKED_SOLO_5x5/BRONZE/I?page=1'
@@ -85,16 +84,22 @@ def get_match_details(sampled_df, run_date, force=True):
 
         parquet_filename = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}/" \
         f"{tier.lower()}_match_details_{run_date}_{min_id}_{max_id}.parquet"
-        if os.path.exists(parquet_filename) and force != True:
+        parquet_high_name = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}" # should
+        # check in whole set of previously read in
+        if force != True:
             print('read in previous version')
-            old_check = 'y'
-            old_match_df = pd.read_parquet(parquet_filename)
+            old_match_df = pd.read_parquet(parquet_high_name) # this could read in newly created
+            # blank, which is ok
             old_summoners_id = old_match_df.summoner_id.unique()
+            min_id += len(old_summoners_id)
+            max_id += len(old_summoners_id)
             sampled_df_tier = sampled_df_tier[~sampled_df_tier['summoner_id'].isin(
                 old_summoners_id)]
 
         i = 0
         sampled_df_tier_list = list(sampled_df_tier.summoner_id.unique())
+        match_details = [] # needs to set up here, and then reset every time it saves out
+        # so that the computation doesn't suffer
         for summoner in sampled_df_tier_list:
             i += 1
             print(f"Grabbing tier: {tier}, {i} out of {sampled_df_tier.shape[0]}, time"
@@ -102,12 +107,15 @@ def get_match_details(sampled_df, run_date, force=True):
             summoner_id = summoner
             url_puuid = f"https://na1.api.riotgames.com/lol/summoner/v4/summoners/{summoner_id}"
             response_puuid = requests.get(url_puuid, headers=headers)
-            puuid = response_puuid.json()['puuid'] # fails here
+            try:
+                puuid = response_puuid.json()['puuid'] # fails here
+            except: continue # pass on fails
 
             start_date = int(time.mktime(time.strptime("2023-01-01", "%Y-%m-%d")))
             end_date = int(time.mktime(time.strptime("2024-12-31", "%Y-%m-%d")))
 
             print('grabbing match list')
+            time.sleep(1)
             url_matchlist = f"https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?startTime={start_date}&endTime={end_date}"
             response_matchlist = requests.get(url_matchlist, headers=headers)
             match_ids = response_matchlist.json()
@@ -138,8 +146,11 @@ def get_match_details(sampled_df, run_date, force=True):
             if i % 1000 ==0:
                 print('stacking DF for summoner')
                 match_df = pd.DataFrame(match_details)
-                if old_check == 'y':
-                    match_df = pd.concat([old_match_df, match_df])
+                # if old_check == 'y':
+                #     match_df = pd.concat([old_match_df, match_df])
+                #     # actually, I don't need to concat it back in, since its
+                #     # already saved! This would dup data
+
 
                 match_df.to_parquet(parquet_filename)
                 print(f"Saved {parquet_filename}, time:{(time.time() - overall_start_time) / 60:.2f} minutes")
@@ -147,7 +158,7 @@ def get_match_details(sampled_df, run_date, force=True):
                 max_id += 1000
                 parquet_filename = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}/" \
                                               f"{tier.lower()}_match_details_{run_date}_{min_id}_{max_id}.parquet"
-
+                match_details = [] # reset for next batch
 
 print('complete!')
 if __name__ == '__main__':
