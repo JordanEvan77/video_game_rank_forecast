@@ -160,9 +160,9 @@ def get_match_details(sampled_df, run_date, force=True):
                                               f"{tier.lower()}_match_details_{run_date}_{min_id}_{max_id}.parquet"
                 match_details = [] # reset for next batch
 
-print('complete!')
 if __name__ == '__main__':
-    sampled_df = get_summoner_list(sample_size=10_000, force=False)
+    print('start!')
+    sampled_df = get_summoner_list(sample_size=2_000, force=False)
     run_date = datetime.datetime.today().strftime("%m-%d-%Y")
-    run_date = "01-26-2025"
+    #run_date = "01-26-2025"
     get_match_details(sampled_df, run_date, force=False)
