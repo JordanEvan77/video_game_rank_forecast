@@ -90,7 +90,8 @@ def get_match_details(sampled_df, run_date, force=True):
             old_check = 'y'
             old_match_df = pd.read_parquet(parquet_filename)
             old_summoners_id = old_match_df.summoner_id.unique()
-            sampled_df_tier = sampled_df_tier[~sampled_df_tier['tier'].isin(old_summoners_id)]
+            sampled_df_tier = sampled_df_tier[~sampled_df_tier['summoner_id'].isin(
+                old_summoners_id)]
 
         i = 0
         sampled_df_tier_list = list(sampled_df_tier.summoner_id.unique())
@@ -101,7 +102,7 @@ def get_match_details(sampled_df, run_date, force=True):
             summoner_id = summoner
             url_puuid = f"https://na1.api.riotgames.com/lol/summoner/v4/summoners/{summoner_id}"
             response_puuid = requests.get(url_puuid, headers=headers)
-            puuid = response_puuid.json()['puuid']
+            puuid = response_puuid.json()['puuid'] # fails here
 
             start_date = int(time.mktime(time.strptime("2023-01-01", "%Y-%m-%d")))
             end_date = int(time.mktime(time.strptime("2024-12-31", "%Y-%m-%d")))
@@ -144,11 +145,13 @@ def get_match_details(sampled_df, run_date, force=True):
                 print(f"Saved {parquet_filename}, time:{(time.time() - overall_start_time) / 60:.2f} minutes")
                 min_id += 1000
                 max_id += 1000
+                parquet_filename = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}/" \
+                                              f"{tier.lower()}_match_details_{run_date}_{min_id}_{max_id}.parquet"
 
 
 print('complete!')
 if __name__ == '__main__':
     sampled_df = get_summoner_list(sample_size=10_000, force=False)
     run_date = datetime.datetime.today().strftime("%m-%d-%Y")
-    #run_date = "01-24-2025"
+    run_date = "01-26-2025"
     get_match_details(sampled_df, run_date, force=False)
