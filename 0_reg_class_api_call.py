@@ -8,6 +8,8 @@ import time
 import random
 import datetime
 import os
+import pyarrow.parquet as pq
+import pyarrow as pa
 
 tiers_list = ['IRON', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND']
 #, 'MASTER', 'GRANDMASTER', 'CHALLENGER']  # All tiers
@@ -72,6 +74,48 @@ def get_summoner_list(sample_size, force):
     return final_smapled_df
 
 
+# I need functions to help clean up all the dictionary stuff, as the formats are clashing:
+def load_reference_schema(filepath):
+    table = pq.read_table(filepath)
+    return table.schema
+
+
+def read_and_align_schema(filepath, reference_schema):
+    df = pd.read_parquet(filepath)
+
+    # Align the schema to match the reference schema
+    table = pa.Table.from_pandas(df, schema=reference_schema, preserve_index=False)
+    return table
+
+
+def get_sample_ids(parquet_high_name, sampled_df_tier, force, min_id, max_id):
+    '''
+    A function that reads in the previous effort to check for already saved data
+    :param parquet_high_name: file path name for tier
+    :param sampled_df_tier: original set of IDs
+    :param force: trigger for fresh start
+    :param min_id: string identifier for save out
+    :param max_id: string identifier for save out
+    :return: set of IDs to iterate through
+    '''
+    # check in whole set of previously read in
+    if force != True:
+        print('read in previous version')
+        old_match_df = pd.read_parquet(parquet_high_name)  # this could read in newly created
+        # blank, which is ok
+        if old_match_df.shape == (0, 0):
+            print('empty previous version')
+        else:
+            old_summoners_id = old_match_df.summoner_id.unique()
+            print('already saved ids read in:', len(old_summoners_id))
+            min_id += len(old_summoners_id)
+            max_id += len(old_summoners_id)
+            sampled_df_tier = sampled_df_tier[~sampled_df_tier['summoner_id'].isin(
+                old_summoners_id)]
+
+    sampled_df_tier_list = list(sampled_df_tier.summoner_id.unique())
+    return sampled_df_tier_list
+
 
 def get_match_details(sampled_df, run_date, force=True):
     old_check = 'n'
@@ -85,21 +129,13 @@ def get_match_details(sampled_df, run_date, force=True):
         parquet_filename = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}/" \
         f"{tier.lower()}_match_details_{run_date}_{min_id}_{max_id}.parquet"
         parquet_high_name = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}" # should
-        # check in whole set of previously read in
-        if force != True:
-            print('read in previous version')
-            old_match_df = pd.read_parquet(parquet_high_name) # this could read in newly created
-            # blank, which is ok
-            old_summoners_id = old_match_df.summoner_id.unique()
-            min_id += len(old_summoners_id)
-            max_id += len(old_summoners_id)
-            sampled_df_tier = sampled_df_tier[~sampled_df_tier['summoner_id'].isin(
-                old_summoners_id)]
 
-        i = 0
-        sampled_df_tier_list = list(sampled_df_tier.summoner_id.unique())
+        sampled_df_tier_list = get_sample_ids(parquet_high_name, sampled_df_tier, force, min_id,
+                                            max_id)
+
         match_details = [] # needs to set up here, and then reset every time it saves out
         # so that the computation doesn't suffer
+        i = 0
         for summoner in sampled_df_tier_list:
             i += 1
             print(f"Grabbing tier: {tier}, {i} out of {sampled_df_tier.shape[0]}, time"
@@ -164,5 +200,5 @@ if __name__ == '__main__':
     print('start!')
     sampled_df = get_summoner_list(sample_size=2_000, force=False)
     run_date = datetime.datetime.today().strftime("%m-%d-%Y")
-    #run_date = "01-26-2025"
-    get_match_details(sampled_df, run_date, force=True)
+    run_date = "01-30-2025"
+    get_match_details(sampled_df, run_date, force=False)
