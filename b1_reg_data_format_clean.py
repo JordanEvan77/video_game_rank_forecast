@@ -10,15 +10,17 @@
 # and use that as an attribute too.
 
 def convert_rank_to_int(tier, rank, lp):
-    # Define the tier values
+    '''
+    A way to turn this into an regression task
+    :param tier:
+    :param rank:
+    :param lp:
+    :return:
+    '''
     tier_values = {'Iron': 1000, 'Bronze': 2000, 'Silver': 3000, 'Gold': 4000, 'Platinum': 5000,
         'Diamond': 6000}
-
-    # Define the rank values
     rank_values = {'IV': 100, 'III': 200, 'II': 300, 'I': 400 #TODO: isn't there a rank 5?
     }
-
-    # Calculate the final integer value
     tier_value = tier_values[tier]
     rank_value = rank_values[rank]
     final_value = tier_value + rank_value + lp
