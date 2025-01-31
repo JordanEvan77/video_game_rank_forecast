@@ -75,17 +75,19 @@ def get_summoner_list(sample_size, force):
 
 
 # I need functions to help clean up all the dictionary stuff, as the formats are clashing:
-def load_reference_schema(filepath):
-    table = pq.read_table(filepath)
-    return table.schema
+def get_common_columns(files):
+    common_columns = None
+    for filepath in files:
+        df = pd.read_parquet(filepath)
+        if common_columns is None:
+            common_columns = set(df.columns)
+        else:
+            common_columns.intersection_update(df.columns)
+    return list(common_columns)
 
-
-def read_and_align_schema(filepath, reference_schema):
-    df = pd.read_parquet(filepath)
-
-    # Align the schema to match the reference schema
-    table = pa.Table.from_pandas(df, schema=reference_schema, preserve_index=False)
-    return table
+def read_with_common_columns(filepath, common_columns):
+    df = pd.read_parquet(filepath, columns=common_columns)
+    return df
 
 
 def get_sample_ids(parquet_high_name, sampled_df_tier, force, min_id, max_id):
@@ -101,20 +103,28 @@ def get_sample_ids(parquet_high_name, sampled_df_tier, force, min_id, max_id):
     # check in whole set of previously read in
     if force != True:
         print('read in previous version')
-        old_match_df = pd.read_parquet(parquet_high_name)  # this could read in newly created
-        # blank, which is ok
-        if old_match_df.shape == (0, 0):
-            print('empty previous version')
-        else:
-            old_summoners_id = old_match_df.summoner_id.unique()
-            print('already saved ids read in:', len(old_summoners_id))
-            min_id += len(old_summoners_id)
-            max_id += len(old_summoners_id)
-            sampled_df_tier = sampled_df_tier[~sampled_df_tier['summoner_id'].isin(
-                old_summoners_id)]
+        parquet_files = [parquet_high_name + '\\' + f for f in os.listdir(parquet_high_name) if
+                         f.endswith(".parquet")]
+        common_columns = get_common_columns(parquet_files)
+        aligned_dfs = []
+        #The above needs to be allowed to be empty, so that it can skip the following:
+
+        print('got common columns')
+        for filepath in parquet_files:
+            df = read_with_common_columns(filepath, common_columns)
+            aligned_dfs.append(df)
+
+        combined_df = pd.concat(aligned_dfs, axis=0)
+
+        old_summoners_id = combined_df.summoner_id.unique()
+        print('already saved ids read in:', len(old_summoners_id))
+        min_id += len(old_summoners_id)
+        max_id += len(old_summoners_id)
+        sampled_df_tier = sampled_df_tier[~sampled_df_tier['summoner_id'].isin(
+            old_summoners_id)]
 
     sampled_df_tier_list = list(sampled_df_tier.summoner_id.unique())
-    return sampled_df_tier_list
+    return sampled_df_tier_list, sampled_df_tier, min_id, max_id
 
 
 def get_match_details(sampled_df, run_date, force=True):
@@ -130,8 +140,8 @@ def get_match_details(sampled_df, run_date, force=True):
         f"{tier.lower()}_match_details_{run_date}_{min_id}_{max_id}.parquet"
         parquet_high_name = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}" # should
 
-        sampled_df_tier_list = get_sample_ids(parquet_high_name, sampled_df_tier, force, min_id,
-                                            max_id)
+        sampled_df_tier_list, sampled_df_tier, min_id, max_id = get_sample_ids(parquet_high_name,
+                                                   sampled_df_tier, force, min_id, max_id)
 
         match_details = [] # needs to set up here, and then reset every time it saves out
         # so that the computation doesn't suffer
@@ -182,12 +192,6 @@ def get_match_details(sampled_df, run_date, force=True):
             if i % 100 ==0:
                 print('stacking DF for summoner')
                 match_df = pd.DataFrame(match_details)
-                # if old_check == 'y':
-                #     match_df = pd.concat([old_match_df, match_df])
-                #     # actually, I don't need to concat it back in, since its
-                #     # already saved! This would dup data
-
-
                 match_df.to_parquet(parquet_filename)
                 print(f"Saved {parquet_filename}, time:{(time.time() - overall_start_time) / 60:.2f} minutes")
                 min_id += 100
@@ -195,6 +199,7 @@ def get_match_details(sampled_df, run_date, force=True):
                 parquet_filename = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}/" \
                                               f"{tier.lower()}_match_details_{run_date}_{min_id}_{max_id}.parquet"
                 match_details = [] # reset for next batch
+
 
 if __name__ == '__main__':
     print('start!')
