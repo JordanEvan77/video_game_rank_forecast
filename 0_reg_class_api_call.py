@@ -78,7 +78,7 @@ def get_match_details(sampled_df, run_date, force=True):
     os.makedirs(dir_base + f"data/class_raw_data_{run_date}", exist_ok=True)
     for tier in tiers_list:
         os.makedirs(dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}", exist_ok=True)
-        min_id, max_id = 0, 1000
+        min_id, max_id = 0, 100
         # get reduced list
         sampled_df_tier = sampled_df[sampled_df['tier'] == tier]
 
@@ -143,7 +143,7 @@ def get_match_details(sampled_df, run_date, force=True):
 
 
             # save out!
-            if i % 1000 ==0:
+            if i % 100 ==0:
                 print('stacking DF for summoner')
                 match_df = pd.DataFrame(match_details)
                 # if old_check == 'y':
@@ -154,8 +154,8 @@ def get_match_details(sampled_df, run_date, force=True):
 
                 match_df.to_parquet(parquet_filename)
                 print(f"Saved {parquet_filename}, time:{(time.time() - overall_start_time) / 60:.2f} minutes")
-                min_id += 1000
-                max_id += 1000
+                min_id += 100
+                max_id += 100
                 parquet_filename = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}/" \
                                               f"{tier.lower()}_match_details_{run_date}_{min_id}_{max_id}.parquet"
                 match_details = [] # reset for next batch
