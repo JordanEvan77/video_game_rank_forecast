@@ -105,6 +105,11 @@ def get_sample_ids(parquet_high_name, sampled_df_tier, force, min_id, max_id):
         print('read in previous version')
         parquet_files = [parquet_high_name + '\\' + f for f in os.listdir(parquet_high_name) if
                          f.endswith(".parquet")]
+        # if this is empty then we need to go to start of reading in!
+        if parquet_files == []:
+            print('Empty tier, just start reading')
+            sampled_df_tier_list = list(sampled_df_tier.summoner_id.unique())
+            return sampled_df_tier_list, sampled_df_tier, min_id, max_id
         common_columns = get_common_columns(parquet_files)
         aligned_dfs = []
         #The above needs to be allowed to be empty, so that it can skip the following:
