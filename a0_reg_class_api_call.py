@@ -10,17 +10,7 @@ import datetime
 import os
 import pyarrow.parquet as pq
 import pyarrow as pa
-
 tiers_list = ['IRON', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND']
-#, 'MASTER', 'GRANDMASTER', 'CHALLENGER']  # All tiers
-
-# Test API
-url = 'https://na1.api.riotgames.com/lol/league/v4/entries/RANKED_SOLO_5x5/BRONZE/I?page=1'
-response = requests.get(url, headers=headers)
-print(response)
-if str(response) == '<Response [403]>':
-    print('BAD RESPONSE')
-    raise ValueError("Invalid value provided!")
 
 overall_start_time = time.time()
 
@@ -207,6 +197,17 @@ def get_match_details(sampled_df, run_date, force=True):
 
 
 if __name__ == '__main__':
+    # , 'MASTER', 'GRANDMASTER', 'CHALLENGER']  # All tiers
+
+    # Test API
+    url = 'https://na1.api.riotgames.com/lol/league/v4/entries/RANKED_SOLO_5x5/BRONZE/I?page=1'
+    response = requests.get(url, headers=headers)
+    print(response)
+    if str(response) == '<Response [403]>':
+        print('BAD RESPONSE')
+        raise ValueError("Invalid value provided!")
+
+
     print('start!')
     sampled_df = get_summoner_list(sample_size=2_000, force=False)
     run_date = datetime.datetime.today().strftime("%m-%d-%Y")
