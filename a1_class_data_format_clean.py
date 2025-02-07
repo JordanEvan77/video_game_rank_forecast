@@ -6,13 +6,13 @@ import pandas as pd
 import numpy as np
 import time
 import random
-import datetime
+from datetime import datetime
 import os
 import pyarrow.parquet as pq
 import pyarrow as pa
 from video_game_rank_forecast.a0_reg_class_api_call import tiers_list
 #TODO: Make sure no time series factor is impactful
-
+iter = 0
 # I will kind of have two different datasets, for the different tasks
 #Regression tasks: Overall tier/LP?
 #Classification Tasks: Game to game victory, final tier placement
@@ -27,6 +27,10 @@ def flatten_nest_dict(df_dict, parent_key='', sep='_'):
     :param sep: separate in new column name
     :return:
     '''
+    current_time_seconds = time.time()
+    current_time = datetime.fromtimestamp(current_time_seconds)
+    print(current_time.strftime('%H:%M:%S'))
+
     items = []
     #print('starter', df_dict)
     if df_dict is None:
@@ -106,6 +110,7 @@ def early_eda(start_df, start_time):
     start_df = start_df[['info', 'summoner_id']]
 
     flat_df = pd.json_normalize(start_df['info'].apply(flatten_nest_dict)) # apply the recursion
+    print('Time:', (time.time() - start_time) / 60)
     print(flat_df.shape)
     raw_df = pd.concat([start_df, flat_df], axis=1)
 
