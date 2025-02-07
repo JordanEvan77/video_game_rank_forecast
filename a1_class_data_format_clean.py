@@ -19,142 +19,9 @@ iter = 0
 
 # lets start with the binary task of game to game victory.
 
-def flatten_nest_dict(df_dict, parent_key='', sep='_'):
-    '''
-    A complex recursive function to unpack the dictionaries
-    :param df_dict: the item to iterate and flatten
-    :param parent_key: prior key
-    :param sep: separate in new column name
-    :return:
-    '''
-    current_time_seconds = time.time()
-    current_time = datetime.fromtimestamp(current_time_seconds)
-   # print(current_time.strftime('%H:%M:%S'))
-
-    items = []
-    #print('starter', df_dict)
-    if df_dict is None:
-        #print('return empty') # base case return
-        return {}
-    if isinstance(df_dict, dict): # first lets check for standard dictionaries
-        #print('***', df_dict)
-        for k, v in df_dict.items(): # pull out key and value, see if the value is still a
-            # dictionary
-            #print(k, v)
-            #print('<<<' * 55)
-            new_key = f'{parent_key}{sep}{k}' if parent_key else k
-            if isinstance(v, (dict, list, np.ndarray)): # if the item within the dictionary is is
-                # a dictionary, list or array, make another recursive call
-                items.extend(flatten_nest_dict(v, new_key, sep=sep).items())
-            else:
-                #print('opt out') # now catches plain ints and sends them back up the recursion
-                items.append((new_key, v))
-
-    elif isinstance(df_dict, (list, np.ndarray)): # special handling of arrays and lists,
-        # so that it can enumerate
-        #print(len(df_dict))
-        for i, v in enumerate(df_dict):
-            #print(i, v)
-            new_key = f'{parent_key}{sep}{i}' if parent_key else str(i)
-            if isinstance(v, (dict, list, np.ndarray)):
-                items.extend(flatten_nest_dict(v, new_key, sep=sep).items())
-            else:
-                items.append((new_key, v))
-    else:
-        #print('simple append')
-        items.append((parent_key, df_dict))
-
-    return dict(items)
-# the big lesson learned with this function is making sure to start with the simplest items first
-# and then add complexity. It was also interesting learning that I could very easily handle
-# arrays, lists and dictionaries in the same recursion call, with some tweaking of the checks.
-
-def find_participant_number(col_list, row):
-    '''
-    A simple function that can be applied to find out which participant each summoner is in their own match.
-    :param col_list: list of id columns
-    :param row: individual row to check
-    :return:
-    '''
-    for col in col_list:
-        if row['summonerId'] == row[col]:
-            return col.split('_')[1]
-    return None
-
-
-#Exploratory Analysis
-def early_eda(start_df, start_time):
-    # How many nested columns are there?
-    print(start_df.shape) #(145,217, 3) less than a million rows, thats good!
-    print(start_df.head(5))
-
-    # I have metadata, and info as dictionaries, check both
-    # INFO:
-    meta_temp = start_df.iloc[1,0]
-    print('list of keys in meta', meta_temp.keys())
-    #list of keys in info dict_keys(['dataVersion', 'matchId', 'participants'])
-    # these aren't needed? since we already have summoner ID
-
-
-    info_temp = start_df.iloc[1,1]
-    print('list of keys in info', info_temp.keys())
-    # Now this is the complicated part
-    #list of keys in meta dict_keys(['endOfGameResult', 'gameCreation', 'gameDuration', 'gameEndTimestamp', 'gameId', 'gameMode', 'gameName', 'gameStartTimestamp', 'gameType', 'gameVersion', 'mapId', 'participants', 'platformId', 'queueId', 'teams', 'tournamentCode'])
-
-    # 'gameDuration' is interesting, and 'win' is my target
-
-    #TODO: Move this outside this function to the main call
-
-    start_df = start_df[['info', 'summoner_id']]
-    # temporary:  just to get format, and reduce column save out later:
-
-    start_df = start_df.iloc[:100, :]
-    flat_df = pd.json_normalize(start_df['info'].apply(flatten_nest_dict)) # apply the recursion
-    print('Time:', (time.time() - start_time) / 60)
-    print(flat_df.shape)
-    raw_df = pd.concat([start_df[['summoner_id']], flat_df], axis=1) #summonerid is a column,
-    # find the
-    # participant
-    # number and only keep them.
-
-    # will want to delete start df
-
-    id_columns = [col for col in flat_df.columns if any(substring in col for substring in [
-        'summonerId'])]
-
-    raw_df['participant_number'] = raw_df[['summonerId'] + id_columns].apply(lambda row:
-                                    find_participant_number(row, id_columns), axis=1)
-
-    #now we want to check those columns in the main data frame, and if the summonerid is in
-    # there, keep the participant number in a new column
-
-
-    #do a redundent check that fails if the summoner IDs don't match
-
-    #now check columns again:
-    print('Time:', (time.time() - start_time)/60)
-    print(raw_df.columns)
-
-    start_df['matchId'] = start_df.metadata['matchId']
-    start_df['gameDuration'] = start_df.metadata['matchId']
-
-
-
-
-    #TODO: This match is attached to a single summoners ID. I should keep it that way, and drop
-    # the info about all other summoners, as they will have their own match version of the same 
-    # match, and I don't want to 10x my data with duplicates for no reason.  This also means that
-    # at least this point we don't care as much about the other teams info
-
-
-
-    # which ones seem interesting? check correlation
-
-    #which ones are too obvious, and have to do with data leak?
-
-    #which ones are most likely associated with early game decisions?
+def key_col_holder():
     win_con = ['win']
-    columns = [
+    key_columns = [
         "12AssistStreakCount",
         "HealFromMapSmyces",
         "SWARM_DefeatMiniBosses",
@@ -208,6 +75,155 @@ def early_eda(start_df, start_time):
         "abilityUses",
         "landSkillShotsEarlyGame"
     ]
+    return win_con, key_columns
+
+
+def flatten_nest_dict(df_dict, parent_key='', sep='_'):
+    '''
+    A complex recursive function to unpack the dictionaries
+    :param df_dict: the item to iterate and flatten
+    :param parent_key: prior key
+    :param sep: separate in new column name
+    :return:
+    '''
+    current_time_seconds = time.time()
+    current_time = datetime.fromtimestamp(current_time_seconds)
+   # print(current_time.strftime('%H:%M:%S'))
+
+    items = []
+    #print('starter', df_dict)
+    if df_dict is None:
+        #print('return empty') # base case return
+        return {}
+    if isinstance(df_dict, dict): # first lets check for standard dictionaries
+        #print('***', df_dict)
+        for k, v in df_dict.items(): # pull out key and value, see if the value is still a
+            # dictionary
+            #print(k, v)
+            #print('<<<' * 55)
+            new_key = f'{parent_key}{sep}{k}' if parent_key else k
+            if isinstance(v, (dict, list, np.ndarray)): # if the item within the dictionary is is
+                # a dictionary, list or array, make another recursive call
+                items.extend(flatten_nest_dict(v, new_key, sep=sep).items())
+            else:
+                #print('opt out') # now catches plain ints and sends them back up the recursion
+                items.append((new_key, v))
+
+    elif isinstance(df_dict, (list, np.ndarray)): # special handling of arrays and lists,
+        # so that it can enumerate
+        #print(len(df_dict))
+        for i, v in enumerate(df_dict):
+            #print(i, v)
+            new_key = f'{parent_key}{sep}{i}' if parent_key else str(i)
+            if isinstance(v, (dict, list, np.ndarray)):
+                items.extend(flatten_nest_dict(v, new_key, sep=sep).items())
+            else:
+                items.append((new_key, v))
+    else:
+        #print('simple append')
+        items.append((parent_key, df_dict))
+
+    return dict(items)
+# the big lesson learned with this function is making sure to start with the simplest items first
+# and then add complexity. It was also interesting learning that I could very easily handle
+# arrays, lists and dictionaries in the same recursion call, with some tweaking of the checks.
+
+
+def find_participant_number(col_list, row):
+    '''
+    A simple function that can be applied to find out which participant each summoner is in their own match.
+    :param col_list: list of id columns
+    :param row: individual row to check
+    :return: participant number
+    '''
+    for col in col_list:
+        if row['summonerId'] == row[col]:
+            return col.split('_')[1]
+    return None
+
+
+def flatten_and_reduce_df(start_df, start_time):
+    # I have metadata, and info as dictionaries, check both
+    # INFO:
+    meta_temp = start_df.iloc[1, 0]
+    print('list of keys in meta', meta_temp.keys())
+    # list of keys in info dict_keys(['dataVersion', 'matchId', 'participants'])
+    # these aren't needed? since we already have summoner ID
+
+    info_temp = start_df.iloc[1, 1]
+    print('list of keys in info', info_temp.keys())
+    # Now this is the complicated part
+    # list of keys in meta dict_keys(['endOfGameResult', 'gameCreation', 'gameDuration', 'gameEndTimestamp', 'gameId', 'gameMode', 'gameName', 'gameStartTimestamp', 'gameType', 'gameVersion', 'mapId', 'participants', 'platformId', 'queueId', 'teams', 'tournamentCode'])
+
+    # 'gameDuration' is interesting, and 'win' is my target
+
+    start_df = start_df[['info', 'summoner_id']]
+    # temporary:  just to get format, and reduce column save out later:
+    #start_df = start_df.iloc[:100, :]
+
+    flat_df = pd.json_normalize(start_df['info'].apply(flatten_nest_dict))  # apply the recursion
+    print('Time:', (time.time() - start_time) / 60)
+    print(flat_df.shape)
+    raw_df = pd.concat([start_df[['summoner_id']], flat_df], axis=1)  # summonerid is a column,
+    # find the
+    # participant
+    # number and only keep them.
+
+    # will want to delete start df
+
+    id_columns = [col for col in flat_df.columns if any(substring in col for substring in [
+        'summonerId'])]
+
+    # now we want to check those columns in the main data frame, and if the summonerid is in
+    # there, keep the participant number in a new column
+    raw_df['participant_number'] = raw_df[['summonerId'] + id_columns].apply(lambda row:
+                                        find_participant_number(row, id_columns), axis=1)
+
+    # now drop unneeded columns and unify column names:\
+    reduce_cols_again = pd.DataFrame()
+    for i in range(1,11): #total count of participants
+        temp = raw_df[raw_df['participant_number'] == i]
+        keep_partic_cols = [i for i in temp.columns if i.contains(f'participant_{i}')]  #OR
+        # whatever the other interesting columns are
+
+
+    # do a redundent check that fails if the summoner IDs don't match
+
+    # now check columns again:
+    print('Time:', (time.time() - start_time) / 60)
+    print(raw_df.columns)
+
+
+def batch_call_flatten_and_reduce_df(start_df, start_time, batch_size):
+    num_batches = start_df.shape[0] // batch_size + 1
+    raw_df = pd.DataFrame()
+    for i in range(1, num_batches):
+        batch_df = start_df.iloc[i*batch_size:(i+1)*batch_size, :]
+        batch_df = flatten_and_reduce_df(batch_df, start_time)
+        raw_df = pd.concat([raw_df, batch_df], ignore_index=True)
+
+    return raw_df
+
+
+#Exploratory Analysis
+def early_eda(raw_df, start_time):
+    # How many nested columns are there?
+    print(raw_df.shape) #(145,217, 3) less than a million rows, thats good!
+    print(raw_df.head(5))
+
+
+    start_df['matchId'] = start_df.metadata['matchId']
+    start_df['gameDuration'] = start_df.metadata['matchId']
+
+
+
+
+    # which ones seem interesting? check correlation
+
+    #which ones are too obvious, and have to do with data leak?
+
+    #which ones are most likely associated with early game decisions?
+
 
 #Categorical Cleaning and Encoding
 # Encode final Ranking
@@ -239,5 +255,8 @@ if __name__ == '__main__':
     common_columns = ['metadata', 'info', 'summoner_id']
     start_df = complex_read_in(parquet_high_name, tiers_list, common_columns)
     print('read in complete', (time.time() - start_time) / 60)
+    # batch read in:
+    reduced_df = batch_call_flatten_and_reduce_df(start_df, start_time, 10_000)
 
-    early_eda(start_df, start_time)
+    #Now for EDA
+    early_eda(reduced_df, start_time)
