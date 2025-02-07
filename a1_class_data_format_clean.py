@@ -19,25 +19,63 @@ from video_game_rank_forecast.a0_reg_class_api_call import tiers_list
 
 # lets start with the binary task of game to game victory.
 
-def flatten_nest_dict(df_dict):
+def flatten_nest_dict(df_dict, parent_key='', sep='_'):
     '''
-    a simple recursive funciton to help with the terrible nested dictionaries
-    :param df_dict:
+    A simple recursive function to unpack the dictionaries
+    :param df_dict: the item to iterate and flatten
+    :param parent_key: prior key
+    :param sep: separate in new column name
     :return:
     '''
-    items, sep, parent_key = [], '_', ''
+    items = []
+    #print('starter', df_dict)
     if df_dict is None:
-        return None
-    for k, v in df_dict.items():
-        #print('key', k) # need to implement a better return stop here?
-        new_key = f'{parent_key}{sep}{k}' if parent_key else k
-        if isinstance(v, dict):
-            items.extend(flatten_nest_dict(v, new_key, sep=sep).items())
-        else:
-            items.append((new_key, v))
-    return dict(items)
-        #participants and teams have all the interesting data
+        #print('return empty') # base case return
+        return {}
+    if isinstance(df_dict, dict): # first lets check for standard dictionaries
+        #print('***', df_dict)
+        for k, v in df_dict.items(): # pull out key and value, see if the value is still a
+            # dictionary
+            #print(k, v)
+            #print('<<<' * 55)
+            new_key = f'{parent_key}{sep}{k}' if parent_key else k
+            if isinstance(v, (dict, list, np.ndarray)): # if the item within the dictionary is is
+                # a dictionary, list or array, make another recursive call
+                items.extend(flatten_nest_dict(v, new_key, sep=sep).items())
+            else:
+                #print('opt out') # now catches plain ints and sends them back up the recursion
+                items.append((new_key, v))
 
+    elif isinstance(df_dict, (list, np.ndarray)): # special handling of arrays and lists,
+        # so that it can enumerate
+        #print(len(df_dict))
+        for i, v in enumerate(df_dict):
+            #print(i, v)
+            new_key = f'{parent_key}{sep}{i}' if parent_key else str(i)
+            if isinstance(v, (dict, list, np.ndarray)):
+                items.extend(flatten_nest_dict(v, new_key, sep=sep).items())
+            else:
+                items.append((new_key, v))
+    else:
+        #print('simple append')
+        items.append((parent_key, df_dict))
+
+    return dict(items)
+# the big lesson learned with this function is making sure to start with the simplest items first
+# and then add complexity. It was also interesting learning that I could very easily handle
+# arrays, lists and dictionaries in the same recursion call, with some tweaking of the checks.
+
+
+# Sample input
+nested_dict = {
+    'a': 1,
+    'b': {'c': 2, 'd': {'e': 3}},
+    'f': [4, 5, {'g': 6, 'h': [7, 8]}]
+}
+
+# Flattening the nested dictionary
+flattened_dict = flatten_nest_dict(nested_dict)
+print(flattened_dict)
 
 
 
