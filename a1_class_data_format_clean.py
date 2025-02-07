@@ -34,6 +34,9 @@ def flatten_nest_dict(df_dict):
         else:
             items.append((new_key, v))
     return dict(items)
+        #key matchId
+        #key participants
+        #key dataVersion
 
 
 
