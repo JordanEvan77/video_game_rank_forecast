@@ -21,7 +21,7 @@ iter = 0
 
 def flatten_nest_dict(df_dict, parent_key='', sep='_'):
     '''
-    A simple recursive function to unpack the dictionaries
+    A complex recursive function to unpack the dictionaries
     :param df_dict: the item to iterate and flatten
     :param parent_key: prior key
     :param sep: separate in new column name
@@ -69,19 +69,17 @@ def flatten_nest_dict(df_dict, parent_key='', sep='_'):
 # and then add complexity. It was also interesting learning that I could very easily handle
 # arrays, lists and dictionaries in the same recursion call, with some tweaking of the checks.
 
-
-# Sample input
-nested_dict = {
-    'a': 1,
-    'b': {'c': 2, 'd': {'e': 3}},
-    'f': [4, 5, {'g': 6, 'h': [7, 8]}]
-}
-
-# Flattening the nested dictionary
-flattened_dict = flatten_nest_dict(nested_dict)
-print(flattened_dict)
-
-
+def find_participant_number(col_list, row):
+    '''
+    A simple function that can be applied to find out which participant each summoner is in their own match.
+    :param col_list: list of id columns
+    :param row: individual row to check
+    :return:
+    '''
+    for col in col_list:
+        if row['summonerId'] == row[col]:
+            return col.split('_')[1]
+    return None
 
 
 #Exploratory Analysis
@@ -114,8 +112,24 @@ def early_eda(start_df, start_time):
     flat_df = pd.json_normalize(start_df['info'].apply(flatten_nest_dict)) # apply the recursion
     print('Time:', (time.time() - start_time) / 60)
     print(flat_df.shape)
-    raw_df = pd.concat([start_df, flat_df], axis=1) # TODO: I need to figure out which
-    # participant the summoner is, and only keep there items.
+    raw_df = pd.concat([start_df[['summoner_id']], flat_df], axis=1) #summonerid is a column,
+    # find the
+    # participant
+    # number and only keep them.
+
+    # will want to delete start df
+
+    id_columns = [col for col in flat_df.columns if any(substring in col for substring in [
+        'summonerId'])]
+
+    raw_df['participant_number'] = raw_df[['summonerId'] + id_columns].apply(lambda row:
+                                    find_participant_number(row, id_columns), axis=1)
+
+    #now we want to check those columns in the main data frame, and if the summonerid is in
+    # there, keep the participant number in a new column
+
+
+    #do a redundent check that fails if the summoner IDs don't match
 
     #now check columns again:
     print('Time:', (time.time() - start_time)/60)
