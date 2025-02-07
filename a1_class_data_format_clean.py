@@ -26,17 +26,17 @@ def flatten_nest_dict(df_dict):
     :return:
     '''
     items, sep, parent_key = [], '_', ''
+    if df_dict is None:
+        return None
     for k, v in df_dict.items():
-        print('key', k) # need to implement a better return stop here?
+        #print('key', k) # need to implement a better return stop here?
         new_key = f'{parent_key}{sep}{k}' if parent_key else k
         if isinstance(v, dict):
             items.extend(flatten_nest_dict(v, new_key, sep=sep).items())
         else:
             items.append((new_key, v))
     return dict(items)
-        #key matchId
-        #key participants
-        #key dataVersion
+        #participants and teams have all the interesting data
 
 
 
@@ -50,14 +50,14 @@ def early_eda(start_df, start_time):
 
     # I have metadata, and info as dictionaries, check both
     # INFO:
-    info_temp = start_df.iloc[1,0]
-    print('list of keys in info', info_temp.keys())
+    meta_temp = start_df.iloc[1,0]
+    print('list of keys in meta', meta_temp.keys())
     #list of keys in info dict_keys(['dataVersion', 'matchId', 'participants'])
     # these aren't needed? since we already have summoner ID
 
 
-    meta_temp = start_df.iloc[1,1]
-    print('list of keys in meta', meta_temp.keys())
+    info_temp = start_df.iloc[1,1]
+    print('list of keys in info', info_temp.keys())
     # Now this is the complicated part
     #list of keys in meta dict_keys(['endOfGameResult', 'gameCreation', 'gameDuration', 'gameEndTimestamp', 'gameId', 'gameMode', 'gameName', 'gameStartTimestamp', 'gameType', 'gameVersion', 'mapId', 'participants', 'platformId', 'queueId', 'teams', 'tournamentCode'])
 
@@ -65,10 +65,10 @@ def early_eda(start_df, start_time):
 
     #TODO: Move this outside this function to the main call
 
-    start_df = start_df[['metadata', 'summoner_id']]
+    start_df = start_df[['info', 'summoner_id']]
 
-    flat_df = pd.json_normalize(start_df['metadata'].apply(flatten_nest_dict)) # apply the recursion
-
+    flat_df = pd.json_normalize(start_df['info'].apply(flatten_nest_dict)) # apply the recursion
+    print(flat_df.shape)
     raw_df = pd.concat([start_df, flat_df], axis=1)
 
     #now check columns again:
