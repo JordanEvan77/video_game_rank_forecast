@@ -29,7 +29,7 @@ def flatten_nest_dict(df_dict, parent_key='', sep='_'):
     '''
     current_time_seconds = time.time()
     current_time = datetime.fromtimestamp(current_time_seconds)
-    print(current_time.strftime('%H:%M:%S'))
+   # print(current_time.strftime('%H:%M:%S'))
 
     items = []
     #print('starter', df_dict)
@@ -108,11 +108,14 @@ def early_eda(start_df, start_time):
     #TODO: Move this outside this function to the main call
 
     start_df = start_df[['info', 'summoner_id']]
+    # temporary:  just to get format, and reduce column save out later:
 
+    start_df = start_df.iloc[:100, :]
     flat_df = pd.json_normalize(start_df['info'].apply(flatten_nest_dict)) # apply the recursion
     print('Time:', (time.time() - start_time) / 60)
     print(flat_df.shape)
-    raw_df = pd.concat([start_df, flat_df], axis=1)
+    raw_df = pd.concat([start_df, flat_df], axis=1) # TODO: I need to figure out which
+    # participant the summoner is, and only keep there items.
 
     #now check columns again:
     print('Time:', (time.time() - start_time)/60)
