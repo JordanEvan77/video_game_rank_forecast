@@ -164,10 +164,10 @@ def flatten_and_reduce_df(start_df, start_time):
     flat_df = pd.json_normalize(start_df['info'].apply(flatten_nest_dict))  # apply the recursion
     print('Time:', (time.time() - start_time) / 60)
     print(flat_df.shape)
-    raw_df = pd.concat([start_df[['summoner_id']], flat_df], axis=1)  # summonerid is a column,
-    # find the
-    # participant
-    # number and only keep them.
+    start_df.reset_index(inplace=True, drop=True)
+    flat_df.reset_index(inplace=True, drop=True)
+    raw_df = pd.concat([start_df[['summoner_id']], flat_df], axis=1)  #
+    # TODO: the above indexes need to be sorted out, so that they match when joined
 
     # will want to delete start df
 
