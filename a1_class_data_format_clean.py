@@ -155,34 +155,39 @@ def flatten_and_reduce_df(start_df, start_time):
     # 'gameDuration' is interesting, and 'win' is my target
 
     start_df = start_df[['info', 'summoner_id']]
-    # temporary:  just to get format, and reduce column save out later:
-    head_df = start_df.head(1)
-
-    flat_df = pd.json_normalize(head_df['info'].apply(flatten_nest_dict))  # apply the recursion
+    flat_df = pd.json_normalize(start_df['info'].apply(flatten_nest_dict))  # apply the recursion
     print('Time:', (time.time() - start_time) / 60)
     print(flat_df.shape)
     start_df.reset_index(inplace=True, drop=True)
     flat_df.reset_index(inplace=True, drop=True)
     raw_df = pd.concat([start_df[['summoner_id']], flat_df], axis=1)  #
-    # TODO: the above indexes need to be sorted out, so that they match when joined
-
-    # will want to delete start df
-
-    id_columns = [col for col in flat_df.columns if any(substring in col for substring in [
-        'summonerId'])]
+    # GAME MODE MUST BE CLASSIC:
+    raw_df = raw_df[raw_df['gameMode'] == "CLASSIC"]
 
     # now we want to check those columns in the main data frame, and if the summonerid is in
     # there, keep the participant number in a new column
+    id_columns = [col for col in flat_df.columns if any(substring in col for substring in [
+        'summonerId'])]
     raw_df['participant_number'] = raw_df[['summoner_id'] + id_columns].apply(lambda row:
                                         find_participant_number(row, id_columns), axis=1)
 
     # now drop unneeded columns and unify column names:\
     reduce_cols_again = pd.DataFrame()
+    team_cols = [i for i in raw_df.columns if 'team' in i.lower() and 'objective' in i.lower()]
     for i in range(1,11): #total count of participants
-        temp = raw_df[raw_df['participant_number'] == i]
-        keep_partic_cols = [i for i in temp.columns if i.contains(f'participant_{i}')]  #OR
-        # whatever the other interesting columns are
-
+        temp = raw_df[raw_df['participant_number'] == str(i)]
+        first_keep_partic_cols = [j for j in temp.columns if f'participants_{i}_' in j]  #OR
+        #the 'teams' +'objectives' columns are interesting, but I only want the ones with the team
+        # the  # summoner  # is on, using 'teamId'. Use apply to get the correct team id
+        team_id_col = [i for i in first_keep_partic_cols if '_teamId' in i][0]
+        temp.loc['team_id_'] = temp[team_id_col] # TODO: Loop and do this later?
+        # now rename columns:
+        rename_dict = {k: k.replace(f'participants_{i}_', '') for k in first_keep_partic_cols}
+        temp = temp.rename(columns = rename_dict)
+        final_keep_partic_cols = team_cols + [j for j in rename_dict.values()]
+         #START HERE: TODO: get the columns renamed and filtered down, so they are uniform,
+        # and bring in the required columns from above simple function to pare down to only model
+        # able variables
 
     # do a redundent check that fails if the summoner IDs don't match
 
@@ -190,6 +195,7 @@ def flatten_and_reduce_df(start_df, start_time):
     print('Time:', (time.time() - start_time) / 60)
     print(raw_df.columns)
 
+    return raw_df
 
 #Exploratory Analysis
 def early_eda(raw_df, start_time):
