@@ -86,9 +86,6 @@ def flatten_nest_dict(df_dict, parent_key='', sep='_'):
     :param sep: separate in new column name
     :return:
     '''
-    current_time_seconds = time.time()
-    current_time = datetime.fromtimestamp(current_time_seconds)
-   # print(current_time.strftime('%H:%M:%S'))
 
     items = []
     #print('starter', df_dict)
@@ -99,7 +96,6 @@ def flatten_nest_dict(df_dict, parent_key='', sep='_'):
         #print('***', df_dict)
         for k, v in df_dict.items(): # pull out key and value, see if the value is still a
             # dictionary
-            #print(k, v)
             #print('<<<' * 55)
             new_key = f'{parent_key}{sep}{k}' if parent_key else k
             if isinstance(v, (dict, list, np.ndarray)): # if the item within the dictionary is is
@@ -129,15 +125,16 @@ def flatten_nest_dict(df_dict, parent_key='', sep='_'):
 # arrays, lists and dictionaries in the same recursion call, with some tweaking of the checks.
 
 
-def find_participant_number(col_list, row):
+def find_participant_number(row, col_list):
     '''
     A simple function that can be applied to find out which participant each summoner is in their own match.
     :param col_list: list of id columns
     :param row: individual row to check
     :return: participant number
     '''
+
     for col in col_list:
-        if row['summonerId'] == row[col]:
+        if row['summoner_id'] == row[col]:
             return col.split('_')[1]
     return None
 
@@ -159,9 +156,9 @@ def flatten_and_reduce_df(start_df, start_time):
 
     start_df = start_df[['info', 'summoner_id']]
     # temporary:  just to get format, and reduce column save out later:
-    #start_df = start_df.iloc[:100, :]
+    head_df = start_df.head(1)
 
-    flat_df = pd.json_normalize(start_df['info'].apply(flatten_nest_dict))  # apply the recursion
+    flat_df = pd.json_normalize(head_df['info'].apply(flatten_nest_dict))  # apply the recursion
     print('Time:', (time.time() - start_time) / 60)
     print(flat_df.shape)
     start_df.reset_index(inplace=True, drop=True)
@@ -176,7 +173,7 @@ def flatten_and_reduce_df(start_df, start_time):
 
     # now we want to check those columns in the main data frame, and if the summonerid is in
     # there, keep the participant number in a new column
-    raw_df['participant_number'] = raw_df[['summonerId'] + id_columns].apply(lambda row:
+    raw_df['participant_number'] = raw_df[['summoner_id'] + id_columns].apply(lambda row:
                                         find_participant_number(row, id_columns), axis=1)
 
     # now drop unneeded columns and unify column names:\
@@ -192,17 +189,6 @@ def flatten_and_reduce_df(start_df, start_time):
     # now check columns again:
     print('Time:', (time.time() - start_time) / 60)
     print(raw_df.columns)
-
-
-def batch_call_flatten_and_reduce_df(start_df, start_time, batch_size):
-    num_batches = start_df.shape[0] // batch_size + 1
-    raw_df = pd.DataFrame()
-    for i in range(1, num_batches):
-        batch_df = start_df.iloc[i*batch_size:(i+1)*batch_size, :]
-        batch_df = flatten_and_reduce_df(batch_df, start_time)
-        raw_df = pd.concat([raw_df, batch_df], ignore_index=True)
-
-    return raw_df
 
 
 #Exploratory Analysis
@@ -225,11 +211,11 @@ def early_eda(raw_df, start_time):
     #which ones are most likely associated with early game decisions?
 
 
-#Categorical Cleaning and Encoding
-# Encode final Ranking
+    #Categorical Cleaning and Encoding
+    # Encode final Ranking
 
 
-#Numeric Cleaning
+    #Numeric Cleaning
 
 
 
@@ -241,7 +227,10 @@ def complex_read_in(parquet_high_name, tiers_list, common_columns):
         for parquet in os.listdir(tier_file):
             print(tier, parquet)
             df = pd.read_parquet(tier_file + f"/{parquet}", columns=common_columns)
+            # now batch read:
+            df = flatten_and_reduce_df(df, start_time)
             df_list.append(df)
+            break # just for now
     return pd.concat(df_list, axis=0)
 
 
@@ -256,7 +245,7 @@ if __name__ == '__main__':
     start_df = complex_read_in(parquet_high_name, tiers_list, common_columns)
     print('read in complete', (time.time() - start_time) / 60)
     # batch read in:
-    reduced_df = batch_call_flatten_and_reduce_df(start_df, start_time, 10_000)
+
 
     #Now for EDA
-    early_eda(reduced_df, start_time)
+    #early_eda(reduced_df, start_time)
