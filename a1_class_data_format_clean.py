@@ -293,3 +293,4 @@ if __name__ == '__main__':
     print('read in complete', (time.time() - start_time) / 60)
     #Now for EDA
     #early_eda(reduced_df, start_time)
+    #Now that the result is smaller, do I want to batch clean? Or clean as one?
