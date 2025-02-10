@@ -172,12 +172,12 @@ def flatten_and_reduce_df(start_df, start_time):
     # I have metadata, and info as dictionaries, check both
     # INFO:
     meta_temp = start_df.iloc[1, 0]
-    print('list of keys in meta', meta_temp.keys())
+    #print('list of keys in meta', meta_temp.keys())
     # list of keys in info dict_keys(['dataVersion', 'matchId', 'participants'])
     # these aren't needed? since we already have summoner ID
 
     info_temp = start_df.iloc[1, 1]
-    print('list of keys in info', info_temp.keys())
+    #print('list of keys in info', info_temp.keys())
     # Now this is the complicated part
     # list of keys in meta dict_keys(['endOfGameResult', 'gameCreation', 'gameDuration', 'gameEndTimestamp', 'gameId', 'gameMode', 'gameName', 'gameStartTimestamp', 'gameType', 'gameVersion', 'mapId', 'participants', 'platformId', 'queueId', 'teams', 'tournamentCode'])
 
@@ -207,6 +207,8 @@ def flatten_and_reduce_df(start_df, start_time):
     key_cols = key_col_holder()
     for i in range(1,11): #total count of participants
         temp = raw_df[raw_df['participant_number'] == str(i)]
+        if temp.shape[0] == 0:
+            continue # participant nubers are 9 or less!
         first_keep_partic_cols = [j for j in temp.columns if f'participants_{i}_' in j]  #OR
         #the 'teams' +'objectives' columns are interesting, but I only want the ones with the team
         # the  # summoner  # is on, using 'teamId'. Use apply to get the correct team id
@@ -226,9 +228,12 @@ def flatten_and_reduce_df(start_df, start_time):
         bad_indices = temp[temp['summoner_id'] != temp['summonerId']].index
         if len(bad_indices) > 0:
             raise ValueError(f"index {bad_indices.tolist()} is mismatched")
+
+        reduce_cols_again = pd.concat([reduce_cols_again, temp], axis=0).reset_index(drop=True)
+        print('stacked', reduce_cols_again.shape)
     # now check columns again:
     print('Time:', (time.time() - start_time) / 60)
-    print(raw_df.columns)
+    #print(raw_df.columns)
 
     return raw_df
 
@@ -272,7 +277,7 @@ def complex_read_in(parquet_high_name, tiers_list, common_columns):
             # now batch read:
             df = flatten_and_reduce_df(df, start_time)
             df_list.append(df)
-            break # just for now
+
     return pd.concat(df_list, axis=0)
 
 
@@ -286,8 +291,5 @@ if __name__ == '__main__':
     common_columns = ['metadata', 'info', 'summoner_id']
     start_df = complex_read_in(parquet_high_name, tiers_list, common_columns)
     print('read in complete', (time.time() - start_time) / 60)
-    # batch read in:
-
-
     #Now for EDA
     #early_eda(reduced_df, start_time)
