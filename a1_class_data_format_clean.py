@@ -11,6 +11,7 @@ import os
 import pyarrow.parquet as pq
 import pyarrow as pa
 from video_game_rank_forecast.a0_reg_class_api_call import tiers_list
+pd.options.mode.chained_assignment = None
 #TODO: Make sure no time series factor is impactful
 iter = 0
 # I will kind of have two different datasets, for the different tasks
@@ -20,8 +21,8 @@ iter = 0
 # lets start with the binary task of game to game victory.
 
 def key_col_holder():
-    win_con = ['win']
-    key_columns = [
+    key_columns = ['win', 'summonerId',
+        "kills", # this is extremely obvious and correlated, still want to check on it though
         "12AssistStreakCount",
         "HealFromMapSmyces",
         "SWARM_DefeatMiniBosses",
@@ -73,9 +74,37 @@ def key_col_holder():
         "firstTurretKilledTime",
         "turretPlatesTaken",
         "abilityUses",
-        "landSkillShotsEarlyGame"
+        "landSkillShotsEarlyGame",
+        'allInPings',
+        'assistMePings',
+        'baitPings',
+        'basicPings',
+        'bountyLevel',
+        'teamPosition',
+        'timeCCingOthers',
+        'timePlayed',
+        'totalAllyJungleMinionsKilled',
+        'totalDamageDealtToChampions',
+        'totalDamageShieldedOnTeammates',
+        'totalDamageTaken',
+        'totalEnemyJungleMinionsKilled',
+        'totalHealsOnTeammates',
+        'totalMinionsKilled',
+        'totalTimeSpentDead',
+        'totalUnitsHealed',
+        'trueDamageDealtToChampions',
+        'trueDamageTaken',
+        'turretKills',
+        'turretTakedowns',
+        'turretsLost',
+        'unrealKills',
+        'visionClearedPings',
+        'visionWardsBoughtInGame',
+        'wardsKilled',
+        'wardsPlaced'
     ]
-    return win_con, key_columns
+    #Ignoring all challenges columns, as they conflate with other columns already selected
+    return key_columns
 
 
 def flatten_nest_dict(df_dict, parent_key='', sep='_'):
@@ -173,29 +202,36 @@ def flatten_and_reduce_df(start_df, start_time):
 
     # now drop unneeded columns and unify column names:\
     reduce_cols_again = pd.DataFrame()
-    team_cols = [i for i in raw_df.columns if 'team' in i.lower() and 'objective' in i.lower()]
+    team_cols = [i for i in raw_df.columns if 'team' in i.lower() and 'objective' in i.lower()] +\
+                ['summoner_id']
+    key_cols = key_col_holder()
     for i in range(1,11): #total count of participants
         temp = raw_df[raw_df['participant_number'] == str(i)]
         first_keep_partic_cols = [j for j in temp.columns if f'participants_{i}_' in j]  #OR
         #the 'teams' +'objectives' columns are interesting, but I only want the ones with the team
         # the  # summoner  # is on, using 'teamId'. Use apply to get the correct team id
         team_id_col = [i for i in first_keep_partic_cols if '_teamId' in i][0]
-        temp.loc['team_id_'] = temp[team_id_col] # TODO: Loop and do this later?
+        temp['team_id_num'] = temp[team_id_col] # TODO: Loop and do this later? so that it
+        # selects only the needed matching teams_ cols with interesting info
         # now rename columns:
         rename_dict = {k: k.replace(f'participants_{i}_', '') for k in first_keep_partic_cols}
         temp = temp.rename(columns = rename_dict)
-        final_keep_partic_cols = team_cols + [j for j in rename_dict.values()]
-         #START HERE: TODO: get the columns renamed and filtered down, so they are uniform,
-        # and bring in the required columns from above simple function to pare down to only model
-        # able variables
+        final_keep_partic_cols = team_cols + [j for j in rename_dict.values() if j in key_cols] # intentional redundency
+        left_out_cols = [i for i in rename_dict.values() if i not in final_keep_partic_cols and i
+        not in team_cols]
+        print('length of left out cols', len(left_out_cols))
+        temp = temp[final_keep_partic_cols]
 
-    # do a redundent check that fails if the summoner IDs don't match
-
+        # do a redundent check that fails if the summoner IDs don't match
+        bad_indices = temp[temp['summoner_id'] != temp['summonerId']].index
+        if len(bad_indices) > 0:
+            raise ValueError(f"index {bad_indices.tolist()} is mismatched")
     # now check columns again:
     print('Time:', (time.time() - start_time) / 60)
     print(raw_df.columns)
 
     return raw_df
+
 
 #Exploratory Analysis
 def early_eda(raw_df, start_time):
