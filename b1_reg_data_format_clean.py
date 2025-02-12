@@ -28,42 +28,8 @@ def convert_rank_to_int(tier, rank, lp):
     return final_value
 
 
-final_rank = '' # will need to read in from original dataset and use funciton converter
+def agg_for_task(clean_df):
+    # used to bring up to level necessary for overall placement
+    print('aggregating for regression')
 
-columns = [
-    "goldPerMinute",
-    "damagePerMinute",
-    "killParticipation",
-    "laneMinionsFirst10Minutes",
-    "champExperience",
-    "baronKills",
-    "dragonKills",
-    "turretTakedowns",
-    "inhibitorTakedowns",
-    "visionScore",
-    "controlWardsPlaced",
-    "wardsKilled",
-    "wardsPlaced",
-    "damageSelfMitigated",
-    "totalHeal",
-    "takedowns",
-    "deaths",
-    "champExperience",
-    "kills",
-    "longestTimeSpentLiving",
-    "riftHeraldTakedowns",
-    "inhibitorKills",
-    "totalDamageShieldedOnTeammates",
-    "totalTimeSpentDead",
-    "kda",
-    "allInPings",
-    "assistMePings",
-    "commandPings",
-    "dangerPings",
-    "onMyWayPings",
-    "basicPings",
-    "pushPings",
-    "visionClearedPings",
-    "skillshotsHit",
-    "neutralMinionsKilled"
-]
+final_rank = '' # will need to read in from original dataset and use funciton converter

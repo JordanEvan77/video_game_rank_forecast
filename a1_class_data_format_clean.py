@@ -10,6 +10,12 @@ from datetime import datetime
 import os
 import pyarrow.parquet as pq
 import pyarrow as pa
+import matplotlib.pyplot as plt
+import seaborn as sns
+import sklearn
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+
 from video_game_rank_forecast.a0_reg_class_api_call import tiers_list
 pd.options.mode.chained_assignment = None
 #TODO: Make sure no time series factor is impactful
@@ -244,25 +250,107 @@ def early_eda(raw_df, start_time):
     print(raw_df.shape) #(145,217, 3) less than a million rows, thats good!
     print(raw_df.head(5))
 
-
-    start_df['matchId'] = start_df.metadata['matchId']
-    start_df['gameDuration'] = start_df.metadata['matchId']
-
+    cat_cols = raw_df.select_dtypes(exclude=['number']).columns.tolist()
+    integer_cols = raw_df.select_dtypes(include=['int']).columns.tolist()
+    float_cols = raw_df.select_dtypes(include=['float']).columns.tolist()
+    descrip_stats = raw_df.describe
 
 
 
     # which ones seem interesting? check correlation
+    corr_matrix = raw_df[float_cols + integer_cols].corr()
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', linewidths=.5)
+    plt.title('Correlation Heatmap of Numerical Columns')
+    plt.savefig(dir_base + f"figures/correlation_heatmap.jpeg")
+    plt.show()
 
     #which ones are too obvious, and have to do with data leak?
 
     #which ones are most likely associated with early game decisions?
 
 
+
+
+def categorical_cleaning(cat_df, cat_cols):
+    '''
+    Would like to do both tasks worth of initial cleaning here, and then specifics later
+    :param cat_df:
+    :param cat_cols:
+    :return:
+    '''
+    print('starting categorical cleaning')
+    # check for nulls:
+    cat_nulls = cat_df[cat_cols].isna().sum()
+    cat_df.dropna(subset=['A', 'B'])
+
     #Categorical Cleaning and Encoding
+    # which ones are ordinal?
+    from sklearn.preprocessing import LabelEncoder
+    le = LabelEncoder()
+    cat_df['Color_encoded'] = le.fit_transform(cat_df['Color'])
+
+    df_2 = pd.get_dummies(cat_df, columns=['Road', 'Bugs', 'Snow', 'Type of Hike', 'large_region'])
+
+
+
     # Encode final Ranking
+    rank_dict = {}
+    cat_df['Color'] = cat_df['Color'].replace(rank_dict)
+
+    # class imbalance?
 
 
+def drop_outliers(df, num_cols, threshold=1.5):
+    '''
+    OUtliers cleaner to count loss and decide if it should be floor cieling
+    :param df:
+    :param num_cols:
+    :param threshold:
+    :return:
+    '''
+    df_cleaned = df.copy()
+    total_rows_lost = 0
+    for col in num_cols:
+        # IQR stuff
+        Q1 = df_cleaned[col].quantile(0.25)
+        Q3 = df_cleaned[col].quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - (threshold * IQR)
+        upper_bound = Q3 + (threshold * IQR)
+
+        rows_before = df_cleaned.shape[0]
+        df_cleaned = df_cleaned[(df_cleaned[col] >= lower_bound) & (df_cleaned[col] <= upper_bound)]
+
+        rows_after = df_cleaned.shape[0]
+        rows_lost = rows_before - rows_after
+        total_rows_lost += rows_lost
+
+        print(f'{col} outliers removed, dropped {rows_lost} rows')
+    print(f'Total rows lost: {total_rows_lost}')
+
+    return df_cleaned
+
+
+
+def numeric_cleaning(num_df, num_cols):
+    '''
+    Would like this to be sufficient for both tasks
+    :param num_df:
+    :return:
+    '''
+    print('numeric cleaning')
     #Numeric Cleaning
+    num_nulls = num_df[num_cols].isna().sum()
+    #num_df.dropna(subset=['A', 'B'])
+
+
+    #impute
+
+
+    #outliers
+
+
 
 
 
@@ -292,5 +380,5 @@ if __name__ == '__main__':
     start_df = complex_read_in(parquet_high_name, tiers_list, common_columns)
     print('read in complete', (time.time() - start_time) / 60)
     #Now for EDA
-    #early_eda(reduced_df, start_time)
+    early_eda(start_df, start_time)
     #Now that the result is smaller, do I want to batch clean? Or clean as one?
