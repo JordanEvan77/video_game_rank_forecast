@@ -1,20 +1,15 @@
-from setup.setups import api_key
-from setup.setups import headers
 from setup.setups import dir_base
-import requests
 import pandas as pd
 import numpy as np
 import time
 import random
 from datetime import datetime
 import os
-import pyarrow.parquet as pq
-import pyarrow as pa
 import matplotlib.pyplot as plt
 import seaborn as sns
-import sklearn
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from imblearn.over_sampling import SMOTE
+plt.ion()
 
 from video_game_rank_forecast.a0_reg_class_api_call import tiers_list
 pd.options.mode.chained_assignment = None
@@ -239,22 +234,41 @@ def flatten_and_reduce_df(start_df, start_time):
         print('stacked', reduce_cols_again.shape)
     # now check columns again:
     print('Time:', (time.time() - start_time) / 60)
-    #print(raw_df.columns)
+   #print(raw_df.columns)
 
-    return raw_df
+    #now do team divide and unify:
+    team_list = ['100', '200'] # i think its this
+    team_cols_0 = []
+    team_cols_1 = []
+
+    #team 0
+    team_0_df = reduce_cols_again[reduce_cols_again['team_id_num'] == team_list[0]]
+    team_1_df = reduce_cols_again[reduce_cols_again['team_id_num'] == team_list[1]]
+
+    # now drop all other columns
+    keep_0 = [i for i in team_0_df.columns if i not in team_cols_1]
+    keep_1 = [j for j in team_1_df.columns if j not in team_cols_0]
+    team_0_df = team_0_df[keep_0]
+    team_1_df = team_1_df[keep_1]
+
+    #TODO: Start here!
+    #then a rename dictionary that includes both and the unified names, so that the same dict can
+    # be used on both dfs, and then both can be concated, and team cols will be fixed
+    return reduce_cols_again
 
 
 #Exploratory Analysis
 def early_eda(raw_df, start_time):
     # How many nested columns are there?
+    #TODO: Keep investigating
     print(raw_df.shape) #(145,217, 3) less than a million rows, thats good!
-    print(raw_df.head(5))
+    #print(raw_df.head(5))
 
     cat_cols = raw_df.select_dtypes(exclude=['number']).columns.tolist()
     integer_cols = raw_df.select_dtypes(include=['int']).columns.tolist()
     float_cols = raw_df.select_dtypes(include=['float']).columns.tolist()
     descrip_stats = raw_df.describe
-
+    #summoner id is not a category, it is an identifier
 
 
     # which ones seem interesting? check correlation
@@ -270,6 +284,41 @@ def early_eda(raw_df, start_time):
     #which ones are most likely associated with early game decisions?
 
 
+
+
+    #CATEGORICAL EDA
+    # for the different categories, what are the distributions?
+    df_cat = pd.DataFrame(columns=['Column', 'Num Categories', 'Category Counts'])
+
+    for col in cat_cols:
+        num_categories = raw_df[col].nunique()
+        category_counts = raw_df[col].value_counts().to_dict()
+        null_count_pct = raw_df[col].isnull().sum() / len(raw_df) * 100
+        new_row = pd.DataFrame({
+            'Column': [col],
+            'Num Categories': [num_categories],
+            'Category Counts': [category_counts],
+            'Null Count (%)': [null_count_pct]
+        })
+        df_cat = pd.concat([df_cat, new_row], ignore_index=True)
+
+    #Items of import: ['teams_objectives_baron_first', 'teams_objectives_champion_first',
+     # 'teams_objectives_dragon_first', 'teams_objectives_horde_first',
+     # 'teams_objectives_inhibitor_first', 'teams_objectives_riftHerald_first',
+     # 'teams_objectives_tower_first', 'firstBloodAssist', 'summoner_id',
+    # 'summonerId', 'teamPosition', 'win']
+
+
+    #Stacked Categorical Counts Bar Graph with dependent variable coloring
+    good_categories = [] # manual
+    for category in good_categories:
+        pivot_df = raw_df.groupby([category]).agg({'win':'sum'})
+        pivot_df.plot(kind='bar', stacked=True, figsize=(10, 6))
+        plt.title(f'Impact of {category} on win rate')
+        plt.xlabel(category)
+        plt.ylabel('Number of wins')
+        plt.legend(title='Result')
+        plt.show()
 
 
 def categorical_cleaning(cat_df, cat_cols):
@@ -298,7 +347,20 @@ def categorical_cleaning(cat_df, cat_cols):
     rank_dict = {}
     cat_df['Color'] = cat_df['Color'].replace(rank_dict)
 
-    # class imbalance?
+
+def class_specific_cleaning(cat_df, cat_cols, num_cols):
+    # class imbalance? We want to have an equal number of won and lost games
+    # do we care aobut rank, or should that be ignored?
+    independent_vars = [i for I in cat_df.columns if I != 'target']
+    X = cat_df[independent_vars]
+    y =cat_df[['target']]
+    sm = SMOTE(random_state=42)
+    X_res, y_res = sm.fit_resample(X, y)
+    df_resampled = pd.DataFrame(X_res, columns=independent_vars)
+    df_resampled['target'] = y_res
+
+
+
 
 
 def drop_outliers(df, num_cols, threshold=1.5):
@@ -352,7 +414,8 @@ def numeric_cleaning(num_df, num_cols):
 
 
 
-
+#TODO: When I have all of  this sorted out above, I should turn it into a COlumnTransformer that
+# then gets fed to a pipeline, to make for really clean and efficient ETL.
 
 def complex_read_in(parquet_high_name, tiers_list, common_columns):
     parquet_files = []
@@ -365,6 +428,7 @@ def complex_read_in(parquet_high_name, tiers_list, common_columns):
             # now batch read:
             df = flatten_and_reduce_df(df, start_time)
             df_list.append(df)
+        break # just for testing, need to make sure column names are good
 
     return pd.concat(df_list, axis=0)
 
