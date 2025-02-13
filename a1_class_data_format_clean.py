@@ -265,7 +265,6 @@ def flatten_and_reduce_df(start_df, start_time):
 #Exploratory Analysis
 def early_eda(raw_df, start_time):
     # How many nested columns are there?
-    #TODO: Keep investigating
     print(raw_df.shape) #(145,217, 3) less than a million rows, thats good!
     #print(raw_df.head(5))
 
@@ -287,7 +286,7 @@ def early_eda(raw_df, start_time):
     plt.figure(figsize=(10, 8))
     sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', linewidths=.5)
     plt.title('Correlation Heatmap of Numerical Columns')
-    plt.savefig(dir_base + f"figures/correlation_heatmap.jpeg")
+    #plt.savefig(dir_base + f"figures/correlation_heatmap.jpeg")
     plt.show()
 
     #which ones are too obvious, and have to do with data leak?
@@ -295,10 +294,26 @@ def early_eda(raw_df, start_time):
     #which ones are most likely associated with early game decisions?
 
 
-    #TODO: Look at distribution, what is skew in hist?
+    #Look at distribution, what is skew in hist?
+    viz_num = integer_cols + float_cols
+    for i in viz_num:
+        plt.figure(figsize=(10, 6))
+        sns.histplot(data=raw_df, x='Trail Conditions', bins=10,
+                     discrete=True)  # Adjust the number of bins as needed
+        plt.title('Histogram of Trail Conditions')
+        plt.xticks(rotation=45)
+        plt.savefig(dir_base + f"figures/hist_dist_{i}.jpeg")
+        plt.show()
 
-    #TODO: Look at outliers in box and whisker
-
+    #Look at outliers in box and whisker
+    for j in viz_num:
+        plt.figure(figsize=(10, 6))
+        sns.boxplot(data=raw_df, x=j)
+        plt.title(f'Box Plot of Values by {j}')
+        plt.xlabel(j)
+        plt.ylabel('Value')
+        plt.savefig(dir_base + f"figures/hist_dist_{j}.jpeg")
+        plt.show()
 
     #CATEGORICAL EDA
     # for the different categories, what are the distributions?
