@@ -298,9 +298,9 @@ def early_eda(raw_df, start_time):
     viz_num = integer_cols + float_cols
     for i in viz_num:
         plt.figure(figsize=(10, 6))
-        sns.histplot(data=raw_df, x='Trail Conditions', bins=10,
+        sns.histplot(data=raw_df, x=i, bins=10,
                      discrete=True)  # Adjust the number of bins as needed
-        plt.title('Histogram of Trail Conditions')
+        plt.title(f'Histogram of {i}')
         plt.xticks(rotation=45)
         plt.savefig(dir_base + f"figures/hist_dist_{i}.jpeg")
         plt.show()
