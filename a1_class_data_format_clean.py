@@ -204,7 +204,7 @@ def flatten_and_reduce_df(start_df, start_time):
     # now drop unneeded columns and unify column names:\
     reduce_cols_again = pd.DataFrame()
     team_cols = [i for i in raw_df.columns if 'team' in i.lower() and 'objective' in i.lower()] +\
-                ['summoner_id']
+                ['summoner_id', 'team_id_num']
     key_cols = key_col_holder()
     for i in range(1,11): #total count of participants
         temp = raw_df[raw_df['participant_number'] == str(i)]
@@ -238,23 +238,28 @@ def flatten_and_reduce_df(start_df, start_time):
 
     #now do team divide and unify:
     team_list = ['100', '200'] # i think its this
-    team_cols_0 = []
-    team_cols_1 = []
 
-    #team 0
-    team_0_df = reduce_cols_again[reduce_cols_again['team_id_num'] == team_list[0]]
-    team_1_df = reduce_cols_again[reduce_cols_again['team_id_num'] == team_list[1]]
 
-    # now drop all other columns
-    keep_0 = [i for i in team_0_df.columns if i not in team_cols_1]
-    keep_1 = [j for j in team_1_df.columns if j not in team_cols_0]
-    team_0_df = team_0_df[keep_0]
-    team_1_df = team_1_df[keep_1]
+    #team
+    reduce_cols_again['team_id_num'] = reduce_cols_again['team_id_num'].astype('int64')
+    team_0_df = reduce_cols_again[reduce_cols_again['team_id_num'] == 100]
+    team_1_df = reduce_cols_again[reduce_cols_again['team_id_num'] == 200]
+    team_cols_0 = [col for col in team_cols if 'teams_0' in col]
+    team_cols_1 = [col for col in team_cols if 'teams_1' in col]
 
-    #TODO: Start here!
-    #then a rename dictionary that includes both and the unified names, so that the same dict can
-    # be used on both dfs, and then both can be concated, and team cols will be fixed
-    return reduce_cols_again
+    # now drop all other teams columns and keep commons
+    team_0_keep = [j for j in reduce_cols_again.columns if j not in team_cols_1]
+    team_1_keep = [j for j in reduce_cols_again.columns if j not in team_cols_0]
+    team_0_df = team_0_df[team_0_keep] # we want
+    team_1_df = team_1_df[team_1_keep]
+
+    #then a rename dictionary that unifies columes
+    team_0_rename_dict = {k: k.replace(f'teams_0_', '') for k in team_cols_0}
+    team_1_rename_dict = {k: k.replace(f'teams_1_', '') for k in team_cols_1}
+    team_0_df = team_0_df.rename(columns=team_0_rename_dict)
+    team_1_df = team_1_df.rename(columns=team_1_rename_dict)
+    reduced_unified = pd.concat([team_0_df, team_1_df], axis=0)
+    return reduced_unified
 
 
 #Exploratory Analysis
@@ -264,11 +269,17 @@ def early_eda(raw_df, start_time):
     print(raw_df.shape) #(145,217, 3) less than a million rows, thats good!
     #print(raw_df.head(5))
 
-    cat_cols = raw_df.select_dtypes(exclude=['number']).columns.tolist()
+    bool_cols = raw_df.select_dtypes(include=['bool']).columns.tolist()
+
+    # Select columns excluding boolean columns
+    bool_cols = raw_df.select_dtypes(include=['bool']).columns.tolist()
+    cat_cols = raw_df.select_dtypes(exclude=['number', 'bool']).columns.tolist()
     integer_cols = raw_df.select_dtypes(include=['int']).columns.tolist()
     float_cols = raw_df.select_dtypes(include=['float']).columns.tolist()
-    descrip_stats = raw_df.describe
     #summoner id is not a category, it is an identifier
+    id_col = ['summoner_id']
+    cat_cols.remove('summoner_id')
+    cat_cols.remove('summonerId')
 
 
     # which ones seem interesting? check correlation
@@ -284,6 +295,9 @@ def early_eda(raw_df, start_time):
     #which ones are most likely associated with early game decisions?
 
 
+    #TODO: Look at distribution, what is skew in hist?
+
+    #TODO: Look at outliers in box and whisker
 
 
     #CATEGORICAL EDA
@@ -319,6 +333,8 @@ def early_eda(raw_df, start_time):
         plt.ylabel('Number of wins')
         plt.legend(title='Result')
         plt.show()
+
+    # any other key eda items to explore?
 
 
 def categorical_cleaning(cat_df, cat_cols):
