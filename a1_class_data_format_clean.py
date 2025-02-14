@@ -307,7 +307,7 @@ def early_eda(raw_df, start_time):
         plt.title(f'Histogram of {i}')
         plt.xticks(rotation=45)
         plt.savefig(dir_base + f"figures/hist_dist_{i}.jpeg")
-        plt.show()
+        #plt.show()
         print('')
 
     #Look at outliers in box and whisker
