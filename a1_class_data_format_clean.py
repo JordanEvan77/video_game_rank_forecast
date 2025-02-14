@@ -270,7 +270,7 @@ def early_eda(raw_df, start_time):
     # How many nested columns are there?
     print(raw_df.shape) #(145,217, 3) less than a million rows, thats good!
     #print(raw_df.head(5))
-
+    raw_df = raw_df.drop('objectives_horde', axis=1)
     bool_cols = raw_df.select_dtypes(include=['bool']).columns.tolist()
 
     # Select columns excluding boolean columns
@@ -298,6 +298,7 @@ def early_eda(raw_df, start_time):
 
 
     #Look at distribution, what is skew in hist?
+    raw_df.reset_index(inplace=True, drop=True)
     viz_num = integer_cols + float_cols
     for i in viz_num:
         print('col:', i)
@@ -447,11 +448,12 @@ def numeric_cleaning(num_df, num_cols):
     #outliers
     no_outlier_df = drop_outliers(num_df, num_cols, threshold=1.5)
 
-
     return no_outlier_df
 
 
 def final_transforms_save_out(final_df):
+    #TODO: any features I should create through ratios or multiplication?
+
     final_cols = []
     X = final_df[final_cols]
     y = final_df['win']
@@ -505,6 +507,7 @@ if __name__ == '__main__':
 
     common_columns = ['metadata', 'info', 'summoner_id']
     start_df = complex_read_in(parquet_high_name, tiers_list, common_columns)
+    start_df.reset_index(inplace=True, drop=True)
     print('read in complete', (time.time() - start_time) / 60)
     #Now for EDA
     early_eda(start_df, start_time)
