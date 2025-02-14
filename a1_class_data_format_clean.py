@@ -25,6 +25,22 @@ iter = 0
 
 # lets start with the binary task of game to game victory.
 
+def complex_read_in(parquet_high_name, tiers_list, common_columns):
+    parquet_files = []
+    df_list = []
+    for tier in tiers_list:
+        tier_file = parquet_high_name + f"//{tier}"
+        for parquet in os.listdir(tier_file):
+            print(tier, parquet)
+            df = pd.read_parquet(tier_file + f"/{parquet}", columns=common_columns)
+            # now batch read:
+            df = flatten_and_reduce_df(df, start_time)
+            df_list.append(df)
+        break # just for testing, need to make sure column names are good
+
+    return pd.concat(df_list, axis=0)
+
+
 def key_col_holder():
     key_columns = ['win', 'summonerId',
         "kills", # this is extremely obvious and correlated, still want to check on it though
@@ -308,7 +324,7 @@ def early_eda(raw_df, start_time):
                      discrete=True)  # Adjust the number of bins as needed
         plt.title(f'Histogram of {i}')
         plt.xticks(rotation=45)
-        plt.savefig(dir_base + f"figures/hist_dist_{i}.jpeg")
+        plt.savefig(dir_base + f"figures/historgrams/hist_dist_{i}.jpeg")
         #plt.show()
         print('')
 
@@ -320,7 +336,7 @@ def early_eda(raw_df, start_time):
         plt.title(f'Box Plot of Values by {j}')
         plt.xlabel(j)
         plt.ylabel('Value')
-        plt.savefig(dir_base + f"figures/hist_dist_{j}.jpeg")
+        plt.savefig(dir_base + f"figures/box_plots//box_and_whisker_{j}.jpeg")
         #plt.show()
 
     #CATEGORICAL EDA
@@ -339,18 +355,16 @@ def early_eda(raw_df, start_time):
         })
         df_cat = pd.concat([df_cat, new_row], ignore_index=True)
 
-    #Items of import: ['teams_objectives_baron_first', 'teams_objectives_champion_first',
-     # 'teams_objectives_dragon_first', 'teams_objectives_horde_first',
-     # 'teams_objectives_inhibitor_first', 'teams_objectives_riftHerald_first',
-     # 'teams_objectives_tower_first', 'firstBloodAssist', 'summoner_id',
-    # 'summonerId', 'teamPosition', 'win']
+    plt.savefig(dir_base + f"figures/box_plots//box_and_whisker_{j}.jpeg")
+    #Items of import: ['objectives_baron_first', 'objectives_champion_first',
+    # 'objectives_dragon_first', 'objectives_horde_first', 'objectives_inhibitor_first',
+    # 'objectives_riftHerald_first', 'objectives_tower_first', 'firstBloodAssist', 'teamPosition',
+    # 'win']
+
 
 
     #Stacked Categorical Counts Bar Graph with dependent variable coloring]
-    #TODO: STart here, look at previous graphs that were made and take notes in code
-    #then set up the list below here to have the right items to graph
-    good_categories = [] # manual
-    for category in good_categories:
+    for category in cat_cols[:-1]:
         print('impact', category)
         pivot_df = raw_df.groupby([category]).agg({'win':'sum'})
         pivot_df.plot(kind='bar', stacked=True, figsize=(10, 6))
@@ -358,9 +372,12 @@ def early_eda(raw_df, start_time):
         plt.xlabel(category)
         plt.ylabel('Number of wins')
         plt.legend(title='Result')
-        plt.show()
+        plt.savefig(dir_base + f"figures/bar_plots//impact_bar_plot_{j}.jpeg")
+        #plt.show()
 
     # any other key eda items to explore?
+    # return nothing
+
 
 
 def categorical_cleaning(cat_df, cat_cols):
@@ -507,21 +524,8 @@ def final_transforms_save_out(final_df):
 #TODO: When I have all of  this sorted out above, I should turn it into a COlumnTransformer that
 # then gets fed to a pipeline, to make for really clean and efficient ETL.
 
-def complex_read_in(parquet_high_name, tiers_list, common_columns):
-    parquet_files = []
-    df_list = []
-    for tier in tiers_list:
-        tier_file = parquet_high_name + f"//{tier}"
-        for parquet in os.listdir(tier_file):
-            print(tier, parquet)
-            df = pd.read_parquet(tier_file + f"/{parquet}", columns=common_columns)
-            # now batch read:
-            df = flatten_and_reduce_df(df, start_time)
-            df_list.append(df)
-        break # just for testing, need to make sure column names are good
-
-    return pd.concat(df_list, axis=0)
-
+def save_out_format(df):
+    df.to_parquet('')
 
 if __name__ == '__main__':
     print('start!')
