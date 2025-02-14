@@ -324,9 +324,11 @@ def early_eda(raw_df, start_time):
                      discrete=True)  # Adjust the number of bins as needed
         plt.title(f'Histogram of {i}')
         plt.xticks(rotation=45)
-        plt.savefig(dir_base + f"figures/historgrams/hist_dist_{i}.jpeg")
+        plt.savefig(dir_base + f"figures/histograms/hist_dist_{i}.jpeg")
         #plt.show()
         print('')
+        plt.close()
+
 
     #Look at outliers in box and whisker
     for j in viz_num:
@@ -338,6 +340,7 @@ def early_eda(raw_df, start_time):
         plt.ylabel('Value')
         plt.savefig(dir_base + f"figures/box_plots//box_and_whisker_{j}.jpeg")
         #plt.show()
+        plt.close()
 
     #CATEGORICAL EDA
     # for the different categories, what are the distributions?
@@ -374,6 +377,7 @@ def early_eda(raw_df, start_time):
         plt.legend(title='Result')
         plt.savefig(dir_base + f"figures/bar_plots//impact_bar_plot_{j}.jpeg")
         #plt.show()
+        plt.close()
 
     # any other key eda items to explore?
     # return nothing
@@ -524,8 +528,15 @@ def final_transforms_save_out(final_df):
 #TODO: When I have all of  this sorted out above, I should turn it into a COlumnTransformer that
 # then gets fed to a pipeline, to make for really clean and efficient ETL.
 
-def save_out_format(df):
-    df.to_parquet('')
+def save_out_format(X_train, X_test, y_train, y_test):
+    os.makedirs(dir_base + f"data/clean_data_{past_run_date}", exist_ok=True)
+
+    X_train.to_parquet(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet")
+    X_test.to_parquet(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet")
+    y_train.to_parquet(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet")
+    y_test.to_parquet(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet")
+
+
 
 if __name__ == '__main__':
     print('start!')
