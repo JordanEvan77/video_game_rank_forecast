@@ -8,7 +8,10 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.metrics import accuracy_score
 from imblearn.over_sampling import SMOTE
+from sklearn.model_selection import train_test_split
 plt.ion()
 
 from video_game_rank_forecast.a0_reg_class_api_call import tiers_list
@@ -284,10 +287,10 @@ def early_eda(raw_df, start_time):
     # which ones seem interesting? check correlation
     corr_matrix = raw_df[float_cols + integer_cols].corr()
     plt.figure(figsize=(10, 8))
-    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', linewidths=.5)
+    sns.heatmap(corr_matrix, annot=False, cmap='coolwarm', linewidths=.5)
     plt.title('Correlation Heatmap of Numerical Columns')
-    #plt.savefig(dir_base + f"figures/correlation_heatmap.jpeg")
-    plt.show()
+    plt.savefig(dir_base + f"figures/correlation_heatmap.jpeg")
+    #plt.show()
 
     #which ones are too obvious, and have to do with data leak?
 
@@ -297,6 +300,7 @@ def early_eda(raw_df, start_time):
     #Look at distribution, what is skew in hist?
     viz_num = integer_cols + float_cols
     for i in viz_num:
+        print('col:', i)
         plt.figure(figsize=(10, 6))
         sns.histplot(data=raw_df, x=i, bins=10,
                      discrete=True)  # Adjust the number of bins as needed
@@ -304,6 +308,7 @@ def early_eda(raw_df, start_time):
         plt.xticks(rotation=45)
         plt.savefig(dir_base + f"figures/hist_dist_{i}.jpeg")
         plt.show()
+        print('')
 
     #Look at outliers in box and whisker
     for j in viz_num:
@@ -374,15 +379,12 @@ def categorical_cleaning(cat_df, cat_cols):
 
 
 
-    # Encode final Ranking
-    rank_dict = {}
-    cat_df['Color'] = cat_df['Color'].replace(rank_dict)
 
 
 def class_specific_cleaning(cat_df, cat_cols, num_cols):
     # class imbalance? We want to have an equal number of won and lost games
     # do we care aobut rank, or should that be ignored?
-    independent_vars = [i for I in cat_df.columns if I != 'target']
+    independent_vars = [i for i in cat_df.columns if i != 'target']
     X = cat_df[independent_vars]
     y =cat_df[['target']]
     sm = SMOTE(random_state=42)
@@ -439,9 +441,39 @@ def numeric_cleaning(num_df, num_cols):
 
 
     #impute
+    imputed_df = []
 
 
     #outliers
+    no_outlier_df = drop_outliers(num_df, num_cols, threshold=1.5)
+
+
+    return no_outlier_df
+
+
+def final_transforms_save_out(final_df):
+    final_cols = []
+    X = final_df[final_cols]
+    y = final_df['win']
+
+    #LDA using to reduce dimensionality for binary classification
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+    lda = LinearDiscriminantAnalysis()
+    lda.fit(X_train, y_train)
+    y_pred = lda.predict(X_test)
+
+    # Calculate accuracy
+    accuracy = accuracy_score(y_test, y_pred)
+    print(f"Accuracy: {accuracy}")
+
+    X_lda = lda.transform(X_train)
+    plt.hist(X_lda[y_train == 0], alpha=0.5, label='Class 0')
+    plt.hist(X_lda[y_train == 1], alpha=0.5, label='Class 1')
+    plt.legend(loc='best')
+    plt.title('LDA projection of the training data')
+    plt.show()
+
 
 
 
