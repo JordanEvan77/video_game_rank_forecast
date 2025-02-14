@@ -450,6 +450,8 @@ def numeric_cleaning(num_df, num_cols):
     #outliers
     no_outlier_df = drop_outliers(num_df, num_cols, threshold=1.5)
 
+    #TODO:scale with standardization
+
     return no_outlier_df
 
 
