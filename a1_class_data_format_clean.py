@@ -12,7 +12,8 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import accuracy_score
 from imblearn.over_sampling import SMOTE
 from sklearn.model_selection import train_test_split
-plt.ion()
+from sklearn.preprocessing import StandardScaler
+#plt.ion()
 
 from video_game_rank_forecast.a0_reg_class_api_call import tiers_list
 pd.options.mode.chained_assignment = None
@@ -319,7 +320,7 @@ def early_eda(raw_df, start_time):
         plt.xlabel(j)
         plt.ylabel('Value')
         plt.savefig(dir_base + f"figures/hist_dist_{j}.jpeg")
-        plt.show()
+        #plt.show()
 
     #CATEGORICAL EDA
     # for the different categories, what are the distributions?
@@ -380,11 +381,10 @@ def categorical_cleaning(cat_df, cat_cols):
 
     df_2 = pd.get_dummies(cat_df, columns=['Road', 'Bugs', 'Snow', 'Type of Hike', 'large_region'])
 
+    return df_2
 
 
-
-
-def class_specific_cleaning(cat_df, cat_cols, num_cols):
+def class_specific_cleaning(cat_df):
     # class imbalance? We want to have an equal number of won and lost games
     # do we care aobut rank, or should that be ignored?
     independent_vars = [i for i in cat_df.columns if i != 'target']
@@ -395,6 +395,7 @@ def class_specific_cleaning(cat_df, cat_cols, num_cols):
     df_resampled = pd.DataFrame(X_res, columns=independent_vars)
     df_resampled['target'] = y_res
 
+    return df_resampled
 
 
 
@@ -431,26 +432,34 @@ def drop_outliers(df, num_cols, threshold=1.5):
 
 
 
-def numeric_cleaning(num_df, num_cols):
+def numeric_cleaning(num_df, int_cols, float_cols):
     '''
     Would like this to be sufficient for both tasks
     :param num_df:
     :return:
     '''
     print('numeric cleaning')
+    # make sure ints are ints
+    num_df[int_cols] = num_df[int_cols].astype('int64')
+    num_cols = int_cols + float_cols
+
     #Numeric Cleaning
     num_nulls = num_df[num_cols].isna().sum()
     #num_df.dropna(subset=['A', 'B'])
 
 
     #impute
-    imputed_df = []
+    for col in num_cols:
+        median = num_df[col].median()
+        num_df[col].fillna(median, inplace=True)
 
 
     #outliers
     no_outlier_df = drop_outliers(num_df, num_cols, threshold=1.5)
 
-    #TODO:scale with standardization
+
+    #Do standardization in other function
+
 
     return no_outlier_df
 
@@ -465,15 +474,24 @@ def final_transforms_save_out(final_df):
     #LDA using to reduce dimensionality for binary classification
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
+
+    # Do scaling
+    scaler = StandardScaler()
+    X_train_standardized = scaler.fit_transform(X_train)
+    X_test_standardized = scaler.transform(X_test)
+
+
+    # Dimension reduction
     lda = LinearDiscriminantAnalysis()
-    lda.fit(X_train, y_train)
-    y_pred = lda.predict(X_test)
+    lda.fit(X_train_standardized, y_train)
+    y_pred = lda.predict(X_test_standardized)
 
     # Calculate accuracy
     accuracy = accuracy_score(y_test, y_pred)
     print(f"Accuracy: {accuracy}")
 
-    X_lda = lda.transform(X_train)
+
+    X_lda = lda.transform(X_train_standardized)
     plt.hist(X_lda[y_train == 0], alpha=0.5, label='Class 0')
     plt.hist(X_lda[y_train == 1], alpha=0.5, label='Class 1')
     plt.legend(loc='best')
@@ -481,6 +499,7 @@ def final_transforms_save_out(final_df):
     plt.show()
 
 
+    return X_train_standardized, X_test_standardized, y_train, y_test
 
 
 #TODO: When I have all of  this sorted out above, I should turn it into a COlumnTransformer that
@@ -516,3 +535,20 @@ if __name__ == '__main__':
     #Now for EDA
     early_eda(start_df, start_time)
     #Now that the result is smaller, do I want to batch clean? Or clean as one?
+
+    # Select columns excluding boolean columns
+    bool_cols = start_df.select_dtypes(include=['bool']).columns.tolist()
+    cat_cols = start_df.select_dtypes(exclude=['number', 'bool']).columns.tolist()
+    integer_cols = start_df.select_dtypes(include=['int']).columns.tolist()
+    float_cols = start_df.select_dtypes(include=['float']).columns.tolist()
+    # summoner id is not a category, it is an identifier
+    id_col = ['summoner_id']
+    cat_cols.remove('summoner_id')
+    cat_cols.remove('summonerId')
+
+    cat_df = categorical_cleaning(start_df, cat_cols)
+    num_df = numeric_cleaning(cat_df, integer_cols, float_cols)
+    tranf_df = class_specific_cleaning(num_df) # do after cat and num cleaning
+    final_df = final_transforms_save_out(tranf_df)
+
+
