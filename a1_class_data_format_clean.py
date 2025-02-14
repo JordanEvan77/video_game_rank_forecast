@@ -344,7 +344,9 @@ def early_eda(raw_df, start_time):
     # 'summonerId', 'teamPosition', 'win']
 
 
-    #Stacked Categorical Counts Bar Graph with dependent variable coloring
+    #Stacked Categorical Counts Bar Graph with dependent variable coloring]
+    #TODO: STart here, look at previous graphs that were made and take notes in code
+    #then set up the list below here to have the right items to graph
     good_categories = [] # manual
     for category in good_categories:
         pivot_df = raw_df.groupby([category]).agg({'win':'sum'})
