@@ -314,6 +314,7 @@ def early_eda(raw_df, start_time):
 
     #Look at outliers in box and whisker
     for j in viz_num:
+        print('j', j)
         plt.figure(figsize=(10, 6))
         sns.boxplot(data=raw_df, x=j)
         plt.title(f'Box Plot of Values by {j}')
@@ -350,6 +351,7 @@ def early_eda(raw_df, start_time):
     #then set up the list below here to have the right items to graph
     good_categories = [] # manual
     for category in good_categories:
+        print('impact', category)
         pivot_df = raw_df.groupby([category]).agg({'win':'sum'})
         pivot_df.plot(kind='bar', stacked=True, figsize=(10, 6))
         plt.title(f'Impact of {category} on win rate')
