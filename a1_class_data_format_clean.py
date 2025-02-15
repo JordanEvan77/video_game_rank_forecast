@@ -314,8 +314,7 @@ def early_eda(raw_df, start_time):
     plt.savefig(dir_base + f"figures/correlation_heatmap.jpeg")
     #plt.show()
 
-    #which ones are too obvious, and have to do with data leak?
-
+    #TODO:which ones are too obvious, and have to do with data leak?
     #which ones are most likely associated with early game decisions?
 
 
@@ -371,6 +370,7 @@ def early_eda(raw_df, start_time):
         plt.savefig(dir_base + f"figures/box_plots//box_and_whisker_{j}.jpeg")
         #plt.show()
         plt.close()
+    #TODO: Check these too
 
     #CATEGORICAL EDA
     # for the different categories, what are the distributions?
@@ -388,7 +388,9 @@ def early_eda(raw_df, start_time):
         })
         df_cat = pd.concat([df_cat, new_row], ignore_index=True)
 
-    plt.savefig(dir_base + f"figures/box_plots//box_and_whisker_{j}.jpeg")
+    df_cat.to_csv(dir_base + f"figures/cat_description.csv", index=False)
+    # TODO: Check these too
+
     #Items of import: ['objectives_baron_first', 'objectives_champion_first',
     # 'objectives_dragon_first', 'objectives_horde_first', 'objectives_inhibitor_first',
     # 'objectives_riftHerald_first', 'objectives_tower_first', 'firstBloodAssist', 'teamPosition',
@@ -408,7 +410,7 @@ def early_eda(raw_df, start_time):
         plt.savefig(dir_base + f"figures/bar_plots//impact_bar_plot_{j}.jpeg")
         #plt.show()
         plt.close()
-
+    # TODO: Check these too
     # any other key eda items to explore?
     # return nothing
 
@@ -492,7 +494,8 @@ def drop_outliers(df, num_cols, threshold=1.5):
 
 
 def final_transforms_save_out(final_df, int_cols, float_cols):
-    #TODO: any features I should create through ratios or multiplication?
+    #now some transforms:
+    #TODO: any features I should create through ratios or multiplication before impute and scale?
 
     final_df[int_cols] = final_df[int_cols].astype('int64')
     num_cols = int_cols + float_cols
@@ -523,8 +526,8 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
     X_train_standardized = scaler.fit_transform(X_train)
     X_test_standardized = scaler.transform(X_test)
 
-    X_train, y_train = class_specific_cleaning(X_train, y_train, X_cols)
-    X_test, y_test = class_specific_cleaning(X_test, y_test, X_cols)
+    X_train_standardized, y_train = class_specific_cleaning( X_train_standardized , y_train, X_cols)
+    X_test_standardized, y_test = class_specific_cleaning(X_test_standardized, y_test, X_cols)
 
     # Dimension reduction
     lda = LinearDiscriminantAnalysis()
@@ -578,7 +581,7 @@ if __name__ == '__main__':
     # Select columns excluding boolean columns
     bool_cols = start_df.select_dtypes(include=['bool']).columns.tolist()
     cat_cols = start_df.select_dtypes(exclude=['number', 'bool']).columns.tolist()
-    integer_cols = start_df.select_dtypes(include=['int']).columns.tolist()
+    int_cols = start_df.select_dtypes(include=['int']).columns.tolist()
     float_cols = start_df.select_dtypes(include=['float']).columns.tolist()
     # summoner id is not a category, it is an identifier
     id_col = ['summoner_id']
@@ -586,6 +589,8 @@ if __name__ == '__main__':
     cat_cols.remove('summonerId')
 
     cat_df = categorical_cleaning(start_df, cat_cols)
-    final_df = final_transforms_save_out(cat_df, int_cols, float_cols)
+    X_train, X_test, y_train, y_test = final_df = final_transforms_save_out(cat_df, int_cols,
+                                                                          float_cols)
+    save_out_format(X_train, X_test, y_train, y_test)
 
 
