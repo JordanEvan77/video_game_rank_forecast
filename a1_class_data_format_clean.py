@@ -43,7 +43,7 @@ def complex_read_in(parquet_high_name, tiers_list, common_columns):
 
 def key_col_holder():
     key_columns = ['win', 'summonerId',
-        "kills", # this is extremely obvious and correlated, still want to check on it though
+        "kills", # TODO: Too correlated? this is extremely obvious and correlated, still want to check on it though
         "12AssistStreakCount",
         "HealFromMapSmyces",
         "SWARM_DefeatMiniBosses",
@@ -63,13 +63,13 @@ def key_col_holder():
         "teamDamagePercentage",
         "visionScorePerMinute",
         "wardTakedownsBefore20M",
-        "assists",
-        "baronKills",
-        "deaths",
+        "assists", # TODO: Too correlated?
+        "baronKills", # keep as this is if the player killed, not team
+        "deaths", # TODO: Too correlated?
         "damageDealtToObjectives",
         "damageDealtToTurrets",
         "damageSelfMitigated",
-        "dragonKills",
+        "dragonKills", # keep as this is if the player killed, not team
         "firstBloodAssist",
         "inhibitorTakedowns",
         "neutralMinionsKilled",
@@ -125,6 +125,10 @@ def key_col_holder():
         'wardsPlaced'
     ]
     #Ignoring all challenges columns, as they conflate with other columns already selected
+
+    #I want to remove attributes that are too closely tied to victory, and aren't able to be
+    # influenced by the player. focusing on getting more kills is a lot like telling a race car
+    # driver to just drive faster.
     return key_columns
 
 
@@ -328,6 +332,31 @@ def early_eda(raw_df, start_time):
         #plt.show()
         print('')
         plt.close()
+    #'AllnPings' are rare, with a heavy skew to left, mostly 0
+    #Assist Pings are lesss rare, with a fair amount above 0, but mode is still 0
+    #Assist kills are much closer to normal, but are still left skewed.
+    #bait pings are again very left kewed, same as all in pings
+    #Baron kills are surprisingly skewed to 0. This is a huge influencer of game victory,
+    # and I would expect almost all games to have atleast 1 baron kill
+    #Basic pings as a column looks useless?
+    #bounty level is skewed left, but has an interesting slope to the right that isn't as steep
+    # as I would have expected
+    # histogram of deaths is closer to normal, which is also a bit surprising, I would have
+    # expected right hand skew
+    # Dragon kills are also surprisingly low, keep objectives instead!
+    # inhibitors skewed left makes sense
+    # horde kills are spiked at midle and edges, which is interesting! definitely needs scaling
+
+
+    #all of this means that scaling will be necessary
+
+
+    #Broken?
+    # damageDealtToObjectives
+    # damageDealtToTurrets
+    # damageSelfMitigated
+
+
 
 
     #Look at outliers in box and whisker
