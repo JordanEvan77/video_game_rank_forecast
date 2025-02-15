@@ -11,6 +11,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import accuracy_score
 from imblearn.over_sampling import SMOTE
+from sklearn.impute import KNNImputer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 #plt.ion()
@@ -351,7 +352,7 @@ def early_eda(raw_df, start_time):
     #all of this means that scaling will be necessary
 
 
-    #Broken?
+    #TODO: Broken?
     # damageDealtToObjectives
     # damageDealtToTurrets
     # damageSelfMitigated
@@ -421,9 +422,18 @@ def categorical_cleaning(cat_df, cat_cols):
     :return:
     '''
     print('starting categorical cleaning')
+    #check for duplicates across full dataframe
+
     # check for nulls:
     cat_nulls = cat_df[cat_cols].isna().sum()
     cat_df.dropna(subset=['A', 'B'])
+    #TODO: if there are a lot, try knn impute instead
+    impute = KNNImputer(n_neighbors=3)
+    df_imputed = cat_df.copy()
+    imputed_values = impute.fit_transform(cat_df[['']])
+    df_imputed[''] = imputed_values
+
+
 
     #Categorical Cleaning and Encoding
     # which ones are ordinal?
