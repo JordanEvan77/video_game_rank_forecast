@@ -446,15 +446,12 @@ def categorical_cleaning(cat_df, cat_cols):
     return df_2
 
 
-def class_specific_cleaning(cat_df):
+def class_specific_cleaning(X, y, X_cols):
     # class imbalance? We want to have an equal number of won and lost games
     # do we care aobut rank, or should that be ignored?
-    independent_vars = [i for i in cat_df.columns if i != 'target']
-    X = cat_df[independent_vars]
-    y =cat_df[['target']]
     sm = SMOTE(random_state=42)
     X_res, y_res = sm.fit_resample(X, y)
-    df_resampled = pd.DataFrame(X_res, columns=independent_vars)
+    df_resampled = pd.DataFrame(X_res, columns=X_cols)
     df_resampled['target'] = y_res
 
     return df_resampled
@@ -494,54 +491,40 @@ def drop_outliers(df, num_cols, threshold=1.5):
 
 
 
-def numeric_cleaning(num_df, int_cols, float_cols):
-    '''
-    Would like this to be sufficient for both tasks
-    :param num_df:
-    :return:
-    '''
-    print('numeric cleaning')
-    # make sure ints are ints
-    num_df[int_cols] = num_df[int_cols].astype('int64')
-    num_cols = int_cols + float_cols
-
-    #Numeric Cleaning
-    num_nulls = num_df[num_cols].isna().sum()
-    #num_df.dropna(subset=['A', 'B'])
-
-
-    #impute
-    for col in num_cols:
-        median = num_df[col].median()
-        num_df[col].fillna(median, inplace=True)
-
-
-    #outliers
-    no_outlier_df = drop_outliers(num_df, num_cols, threshold=1.5)
-
-
-    #Do standardization in other function
-
-
-    return no_outlier_df
-
-
-def final_transforms_save_out(final_df):
+def final_transforms_save_out(final_df, int_cols, float_cols):
     #TODO: any features I should create through ratios or multiplication?
 
-    final_cols = []
-    X = final_df[final_cols]
+    final_df[int_cols] = final_df[int_cols].astype('int64')
+    num_cols = int_cols + float_cols
+
+    # Numeric Cleaning
+    num_nulls = final_df[num_cols].isna().sum()
+    # num_df.dropna(subset=['A', 'B'])
+
+    X_cols = []
+    X = final_df[X_cols]
     y = final_df['win']
 
     #LDA using to reduce dimensionality for binary classification
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    df_list = [X_train, X_test, y_train, y_test]
 
+    print('numeric cleaning')
+    # impute
+    for num_df in df_list:
+        for col in num_cols:
+            median = num_df[col].median()
+            num_df[col].fillna(median, inplace=True)
+            num_df= drop_outliers(num_df, num_cols, threshold=1.5)
 
     # Do scaling
+    X_train, X_test, y_train, y_test = df_list
     scaler = StandardScaler()
     X_train_standardized = scaler.fit_transform(X_train)
     X_test_standardized = scaler.transform(X_test)
 
+    X_train, y_train = class_specific_cleaning(X_train, y_train, X_cols)
+    X_test, y_test = class_specific_cleaning(X_test, y_test, X_cols)
 
     # Dimension reduction
     lda = LinearDiscriminantAnalysis()
@@ -603,8 +586,6 @@ if __name__ == '__main__':
     cat_cols.remove('summonerId')
 
     cat_df = categorical_cleaning(start_df, cat_cols)
-    num_df = numeric_cleaning(cat_df, integer_cols, float_cols)
-    tranf_df = class_specific_cleaning(num_df) # do after cat and num cleaning
-    final_df = final_transforms_save_out(tranf_df)
+    final_df = final_transforms_save_out(cat_df, int_cols, float_cols)
 
 
