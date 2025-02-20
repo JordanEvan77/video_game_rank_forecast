@@ -296,9 +296,11 @@ def early_eda(raw_df, start_time):
     bool_cols = raw_df.select_dtypes(include=['bool']).columns.tolist()
 
     # Select columns excluding boolean columns
-    bool_cols = raw_df.select_dtypes(include=['bool']).columns.tolist()
+    raw_df = raw_df.applymap(lambda x: pd.to_numeric(x, errors='ignore'))
+    bool_cols = raw_df.select_dtypes(include=['bool']).columns
+    raw_df[bool_cols] = raw_df[bool_cols].astype(int)
     cat_cols = raw_df.select_dtypes(exclude=['number', 'bool']).columns.tolist()
-    integer_cols = raw_df.select_dtypes(include=['int']).columns.tolist()
+    int_cols = raw_df.select_dtypes(include=['int']).columns.tolist()
     float_cols = raw_df.select_dtypes(include=['float']).columns.tolist()
     #summoner id is not a category, it is an identifier
     id_col = ['summoner_id']
@@ -307,7 +309,7 @@ def early_eda(raw_df, start_time):
 
 
     # which ones seem interesting? check correlation
-    corr_matrix = raw_df[float_cols + integer_cols].corr()
+    corr_matrix = raw_df[float_cols + int_cols].corr()
     plt.figure(figsize=(10, 8))
     sns.heatmap(corr_matrix, annot=False, cmap='coolwarm', linewidths=.5)
     plt.title('Correlation Heatmap of Numerical Columns')
@@ -320,7 +322,7 @@ def early_eda(raw_df, start_time):
 
     #Look at distribution, what is skew in hist?
     raw_df.reset_index(inplace=True, drop=True)
-    viz_num = integer_cols + float_cols
+    viz_num = int_cols + float_cols
     for i in viz_num:
         print('col:', i)
         plt.figure(figsize=(10, 6))
@@ -370,7 +372,7 @@ def early_eda(raw_df, start_time):
         plt.savefig(dir_base + f"figures/box_plots//box_and_whisker_{j}.jpeg")
         #plt.show()
         plt.close()
-    #TODO: Check these too
+    #as expected, most of these ahve heavy right side skew, that is dictated with outliers
 
     #CATEGORICAL EDA
     # for the different categories, what are the distributions?
@@ -389,7 +391,7 @@ def early_eda(raw_df, start_time):
         df_cat = pd.concat([df_cat, new_row], ignore_index=True)
 
     df_cat.to_csv(dir_base + f"figures/cat_description.csv", index=False)
-    # TODO: Check these too
+    # TODO: Horde first is so full of nulls, may be useless?
 
     #Items of import: ['objectives_baron_first', 'objectives_champion_first',
     # 'objectives_dragon_first', 'objectives_horde_first', 'objectives_inhibitor_first',
@@ -399,7 +401,9 @@ def early_eda(raw_df, start_time):
 
 
     #Stacked Categorical Counts Bar Graph with dependent variable coloring]
-    for category in cat_cols[:-1]:
+    for category in cat_cols:
+        if category == 'win':
+            continue #
         print('impact', category)
         pivot_df = raw_df.groupby([category]).agg({'win':'sum'})
         pivot_df.plot(kind='bar', stacked=True, figsize=(10, 6))
@@ -427,21 +431,21 @@ def categorical_cleaning(cat_df, cat_cols):
     #check for duplicates across full dataframe
 
     # check for nulls:
-    cat_nulls = cat_df[cat_cols].isna().sum()
-    cat_df.dropna(subset=['A', 'B'])
-    #TODO: if there are a lot, try knn impute instead
-    impute = KNNImputer(n_neighbors=3)
-    df_imputed = cat_df.copy()
-    imputed_values = impute.fit_transform(cat_df[['']])
-    df_imputed[''] = imputed_values
+    print(cat_df[cat_cols].isna().sum())
+    cat_df = cat_df.dropna(subset=cat_cols)
+    #if there are a lot, try knn impute instead
+    # impute = KNNImputer(n_neighbors=3)
+    # df_imputed = cat_df.copy()
+    # imputed_values = impute.fit_transform(cat_df[['']])
+    # df_imputed[''] = imputed_values
 
 
 
     #Categorical Cleaning and Encoding
     # which ones are ordinal?
-    from sklearn.preprocessing import LabelEncoder
-    le = LabelEncoder()
-    cat_df['Color_encoded'] = le.fit_transform(cat_df['Color'])
+    # from sklearn.preprocessing import LabelEncoder
+    # le = LabelEncoder()
+    # cat_df['Color_encoded'] = le.fit_transform(cat_df['Color'])
 
     df_2 = pd.get_dummies(cat_df, columns=['Road', 'Bugs', 'Snow', 'Type of Hike', 'large_region'])
 
@@ -575,11 +579,13 @@ if __name__ == '__main__':
     start_df.reset_index(inplace=True, drop=True)
     print('read in complete', (time.time() - start_time) / 60)
     #Now for EDA
-    early_eda(start_df, start_time)
+    #early_eda(start_df, start_time)
     #Now that the result is smaller, do I want to batch clean? Or clean as one?
 
     # Select columns excluding boolean columns
-    bool_cols = start_df.select_dtypes(include=['bool']).columns.tolist()
+    start_df = start_df.applymap(lambda x: pd.to_numeric(x, errors='ignore'))
+    bool_cols = start_df.select_dtypes(include=['bool']).columns
+    start_df = start_df[bool_cols].astype(int)
     cat_cols = start_df.select_dtypes(exclude=['number', 'bool']).columns.tolist()
     int_cols = start_df.select_dtypes(include=['int']).columns.tolist()
     float_cols = start_df.select_dtypes(include=['float']).columns.tolist()
