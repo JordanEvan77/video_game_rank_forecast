@@ -296,7 +296,7 @@ def early_eda(raw_df, start_time):
     bool_cols = raw_df.select_dtypes(include=['bool']).columns.tolist()
 
     # Select columns excluding boolean columns
-    raw_df = raw_df.applymap(lambda x: pd.to_numeric(x, errors='ignore'))
+    raw_df = raw_df.apply(lambda col: col.map(lambda x: pd.to_numeric(x, errors='ignore')))
     bool_cols = raw_df.select_dtypes(include=['bool']).columns
     raw_df[bool_cols] = raw_df[bool_cols].astype(int)
     cat_cols = raw_df.select_dtypes(exclude=['number', 'bool']).columns.tolist()
@@ -583,9 +583,12 @@ if __name__ == '__main__':
     #Now that the result is smaller, do I want to batch clean? Or clean as one?
 
     # Select columns excluding boolean columns
-    start_df = start_df.applymap(lambda x: pd.to_numeric(x, errors='ignore'))
+    start_df = start_df.apply(lambda col: col.map(lambda x: pd.to_numeric(x, errors='ignore')))
+    start_df = start_df.apply(
+        lambda col: col.map(lambda x: int(x) if isinstance(x, float) and x.is_integer() else x))
+
     bool_cols = start_df.select_dtypes(include=['bool']).columns
-    start_df = start_df[bool_cols].astype(int)
+    start_df[bool_cols] = start_df[bool_cols].astype(int)
     cat_cols = start_df.select_dtypes(exclude=['number', 'bool']).columns.tolist()
     int_cols = start_df.select_dtypes(include=['int']).columns.tolist()
     float_cols = start_df.select_dtypes(include=['float']).columns.tolist()
