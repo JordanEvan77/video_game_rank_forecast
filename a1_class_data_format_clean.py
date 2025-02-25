@@ -435,24 +435,17 @@ def categorical_cleaning(cat_df, cat_cols):
     cat_nulls.reset_index(inplace=True, drop=False)
     cat_nulls.columns = ['column', 'null_count']
     drop_cats = cat_nulls.loc[cat_nulls['null_count'] > 0.3, 'column'].unique()
-    impute_cats = cat_nulls.loc[cat_nulls['null_count'] <= 0.3, 'column'].unique()
+    impute_cats = cat_nulls.loc[(cat_nulls['null_count'] <= 0.3) & (cat_nulls['null_count'] >
+                                                                    0), 'column'].unique()
     # set up threshold:
     if len(drop_cats) > 0:
-        cat_df = cat_df.dropna(subset=cat_cols)
-    #if there are a lot, try knn impute instead
-    df_imputed = cat_df.copy()
-    if len(impute_cats) > 0:
-        impute = KNNImputer(n_neighbors=3)
-        imputed_values = impute.fit_transform(cat_df[impute_cats])
-        df_imputed[impute_cats] = imputed_values
-    del cat_df
-
+        cat_df = cat_df.dropna(subset=drop_cats)
 
     #Categorical Cleaning and Encoding
     # which ones are ordinal?
 
     # Team position is  worth doing OHE
-    df_imputed = pd.get_dummies(df_imputed, columns=['teamPosition'])
+    cat_df = pd.get_dummies(cat_df, columns=['teamPosition'])
     cat_cols.remove('teamPosition')
     # would be good to label encode anything with more than say 10 categories.
     # Could do binary or hash encoding as an improvement
@@ -460,11 +453,19 @@ def categorical_cleaning(cat_df, cat_cols):
     le = LabelEncoder()
     le_cols = []
     for col in cat_cols:
-        if len(df_imputed[col].unique()) > 10:
+        if len(cat_df[col].unique()) > 10:
             le_cols.append(col)
-            df_imputed[col] = le.fit_transform(df_imputed[col])
+            cat_df[col] = le.fit_transform(cat_df[col])
 
     print('THese columns were Label Encoded', le_cols) #I am manually checking this
+
+    #if there are a lot, try knn impute instead
+    df_imputed = cat_df.copy()
+    if len(impute_cats) > 0:
+        impute = KNNImputer(n_neighbors=3)
+        imputed_values = impute.fit_transform(cat_df[impute_cats])
+        df_imputed[impute_cats] = imputed_values
+
     return df_imputed
 
 
@@ -528,7 +529,7 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
     impute_nums = num_nulls.loc[num_nulls['null_count'] <= 0.3, 'column'].unique()
     # set up threshold:
     if len(drop_nums) > 0:
-        final_df = final_df.dropna(subset=cat_cols)
+        final_df = final_df.dropna(subset=drop_nums)
     # if there are a lot, try knn impute instead
 
 
