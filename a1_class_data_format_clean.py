@@ -431,29 +431,41 @@ def categorical_cleaning(cat_df, cat_cols):
     #check for duplicates across full dataframe
 
     # check for nulls:
-    cat_nulls = cat_df[cat_cols].isna().sum()
-    drop_cats = cat_nulls[cat_nulls[''] > 1]
-    impute_cats = cat_nulls[cat_nulls[''] < 1]
+    cat_nulls = pd.DataFrame(cat_df[cat_cols].isna().mean() * 100)
+    cat_nulls.reset_index(inplace=True, drop=False)
+    cat_nulls.columns = ['column', 'null_count']
+    drop_cats = cat_nulls.loc[cat_nulls['null_count'] > 0.3, 'column'].unique()
+    impute_cats = cat_nulls.loc[cat_nulls['null_count'] <= 0.3, 'column'].unique()
     # set up threshold:
-    if len(drop_cats) > 1:
+    if len(drop_cats) > 0:
         cat_df = cat_df.dropna(subset=cat_cols)
     #if there are a lot, try knn impute instead
-    # impute = KNNImputer(n_neighbors=3)
-    # df_imputed = cat_df.copy()
-    # imputed_values = impute.fit_transform(cat_df[['']])
-    # df_imputed[''] = imputed_values
-
+    df_imputed = cat_df.copy()
+    if len(impute_cats) > 0:
+        impute = KNNImputer(n_neighbors=3)
+        imputed_values = impute.fit_transform(cat_df[impute_cats])
+        df_imputed[impute_cats] = imputed_values
+    del cat_df
 
 
     #Categorical Cleaning and Encoding
     # which ones are ordinal?
-    # from sklearn.preprocessing import LabelEncoder
-    # le = LabelEncoder()
-    # cat_df['Color_encoded'] = le.fit_transform(cat_df['Color'])
 
-    df_2 = pd.get_dummies(cat_df, columns=['Road', 'Bugs', 'Snow', 'Type of Hike', 'large_region'])
+    # Team position is  worth doing OHE
+    df_imputed = pd.get_dummies(df_imputed, columns=['teamPosition'])
+    cat_cols.remove('teamPosition')
+    # would be good to label encode anything with more than say 10 categories.
+    # Could do binary or hash encoding as an improvement
+    from sklearn.preprocessing import LabelEncoder
+    le = LabelEncoder()
+    le_cols = []
+    for col in cat_cols:
+        if len(df_imputed[col].unique()) > 10:
+            le_cols.append(col)
+            df_imputed[col] = le.fit_transform(df_imputed[col])
 
-    return df_2
+    print('THese columns were Label Encoded', le_cols) #I am manually checking this
+    return df_imputed
 
 
 def class_specific_cleaning(X, y, X_cols):
@@ -509,9 +521,16 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
     num_cols = int_cols + float_cols
 
     # Numeric Cleaning
-    num_nulls = final_df[num_cols].isna().sum()
-    # num_df.dropna(subset=['A', 'B']) Any numeric cols I should drop? DO I want to do a
-    # threshold check?
+    num_nulls = pd.DataFrame(final_df[num_cols].isna().mean() * 100)
+    num_nulls.reset_index(inplace=True, drop=False)
+    num_nulls.columns = ['column', 'null_count']
+    drop_nums = num_nulls.loc[num_nulls['null_count'] > 0.3, 'column'].unique()
+    impute_nums = num_nulls.loc[num_nulls['null_count'] <= 0.3, 'column'].unique()
+    # set up threshold:
+    if len(drop_nums) > 0:
+        final_df = final_df.dropna(subset=cat_cols)
+    # if there are a lot, try knn impute instead
+
 
     X_cols = [i for i in final_df.columns if i != 'win']
     X = final_df[X_cols]
@@ -521,10 +540,9 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
     df_list = [X_train, X_test, y_train, y_test]
 
-    print('numeric cleaning')
     # impute
     for num_df in df_list:
-        for col in num_cols:
+        for col in impute_nums:
             median = num_df[col].median()
             num_df[col].fillna(median, inplace=True)
             num_df= drop_outliers(num_df, num_cols, threshold=1.5)
@@ -562,6 +580,8 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
 
 #TODO: When I have all of  this sorted out above, I should turn it into a COlumnTransformer that
 # then gets fed to a pipeline, to make for really clean and efficient ETL.
+
+#TODO: I should also run it on the full dataset instead of the half set!
 
 def save_out_format(X_train, X_test, y_train, y_test):
     os.makedirs(dir_base + f"data/clean_data_{past_run_date}", exist_ok=True)
