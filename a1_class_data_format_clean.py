@@ -431,8 +431,12 @@ def categorical_cleaning(cat_df, cat_cols):
     #check for duplicates across full dataframe
 
     # check for nulls:
-    print(cat_df[cat_cols].isna().sum())
-    cat_df = cat_df.dropna(subset=cat_cols)
+    cat_nulls = cat_df[cat_cols].isna().sum()
+    drop_cats = cat_nulls[cat_nulls[''] > 1]
+    impute_cats = cat_nulls[cat_nulls[''] < 1]
+    # set up threshold:
+    if len(drop_cats) > 1:
+        cat_df = cat_df.dropna(subset=cat_cols)
     #if there are a lot, try knn impute instead
     # impute = KNNImputer(n_neighbors=3)
     # df_imputed = cat_df.copy()
@@ -506,9 +510,10 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
 
     # Numeric Cleaning
     num_nulls = final_df[num_cols].isna().sum()
-    # num_df.dropna(subset=['A', 'B'])
+    # num_df.dropna(subset=['A', 'B']) Any numeric cols I should drop? DO I want to do a
+    # threshold check?
 
-    X_cols = []
+    X_cols = [i for i in final_df.columns if i != 'win']
     X = final_df[X_cols]
     y = final_df['win']
 
@@ -530,6 +535,7 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
     X_train_standardized = scaler.fit_transform(X_train)
     X_test_standardized = scaler.transform(X_test)
 
+    # now do balancing, within split groups
     X_train_standardized, y_train = class_specific_cleaning( X_train_standardized , y_train, X_cols)
     X_test_standardized, y_test = class_specific_cleaning(X_test_standardized, y_test, X_cols)
 
@@ -583,16 +589,19 @@ if __name__ == '__main__':
     #Now that the result is smaller, do I want to batch clean? Or clean as one?
 
     # Select columns excluding boolean columns
-    start_df = start_df.apply(lambda col: col.map(lambda x: pd.to_numeric(x, errors='ignore')))
     start_df = start_df.apply(
-        lambda col: col.map(lambda x: int(x) if isinstance(x, float) and x.is_integer() else x))
-
-    bool_cols = start_df.select_dtypes(include=['bool']).columns
-    start_df[bool_cols] = start_df[bool_cols].astype(int)
-    cat_cols = start_df.select_dtypes(exclude=['number', 'bool']).columns.tolist()
+        lambda col: col.map(lambda x: int(x) if isinstance(x, float) and x.is_integer()
+        else (float(x) if isinstance(x, float) else x)))
+    #@TODO: Check that these work and then add to study guide
+    bool_cols = start_df.select_dtypes(include=['bool']).columns.tolist()
+    bool_cols.append('objectives_horde_first')
+    start_df[bool_cols] = start_df[bool_cols].astype('Int64')
     int_cols = start_df.select_dtypes(include=['int']).columns.tolist()
     float_cols = start_df.select_dtypes(include=['float']).columns.tolist()
+    cat_cols = [i for i in start_df.columns if i not in int_cols+float_cols]
     # summoner id is not a category, it is an identifier
+    if len(int_cols) + len(float_cols) + len(cat_cols) != start_df.shape[1]:
+        raise ValueError('column count doesnt align')
     id_col = ['summoner_id']
     cat_cols.remove('summoner_id')
     cat_cols.remove('summonerId')
