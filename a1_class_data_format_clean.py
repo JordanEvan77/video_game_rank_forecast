@@ -538,7 +538,7 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
     # if there are a lot, try knn impute instead
 
 
-    X_cols = [i for i in final_df.columns if i not in ['win', 'summoner_id']]
+    X_cols = [i for i in final_df.columns if i not in ['win', 'summoner_id', 'summonerid']]
     X = final_df[X_cols]
     y = final_df['win']
 
@@ -554,16 +554,21 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
             print(i, col)
             median = num_df[col].median()
             num_df[col] = num_df[col].fillna(median)
-        df_list[idx] = drop_outliers(num_df, num_cols, threshold=1.5)
+        df_list[idx] = drop_outliers(num_df, num_cols, threshold=1.5) # TODO: The losses may be
+        # too large here, may want to impute!
 
     # Do scaling
     X_train, X_test = df_list
+    y_train = y_train.loc[X_train.index]
+    y_test = y_test.loc[X_test.index]
+    assert X_train.index.equals(y_train.index)
+    assert X_test.index.equals(y_test.index)
     scaler = StandardScaler()
     X_train_standardized = scaler.fit_transform(X_train)
     X_test_standardized = scaler.transform(X_test)
 
     # now do balancing, within split groups
-    X_train_standardized, y_train = class_specific_cleaning( X_train_standardized , y_train, X_cols)
+    X_train_standardized, y_train = class_specific_cleaning(X_train_standardized , y_train, X_cols)
     X_test_standardized, y_test = class_specific_cleaning(X_test_standardized, y_test, X_cols)
 
     # Dimension reduction
@@ -634,7 +639,7 @@ if __name__ == '__main__':
     id_col = ['summoner_id']
     cat_cols.remove('summoner_id')
     cat_cols.remove('summonerId')
-
+    start_df = start_df.drop(columns=['summonerId'])
     cat_df = categorical_cleaning(start_df, cat_cols)
     X_train, X_test, y_train, y_test = final_df = final_transforms_save_out(cat_df, int_cols,
                                                                           float_cols)
