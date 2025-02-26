@@ -483,7 +483,7 @@ def class_specific_cleaning(X, y, X_cols):
 
 
 
-def drop_outliers(df, col, threshold=1.5):
+def drop_outliers(df, num_cols, threshold=1.5):
     '''
     OUtliers cleaner to count loss and decide if it should be floor cieling
     :param df:
@@ -493,22 +493,22 @@ def drop_outliers(df, col, threshold=1.5):
     '''
     df_cleaned = df.copy()
     total_rows_lost = 0
+    for col in num_cols:
+        # IQR stuff
+        Q1 = df_cleaned[col].quantile(0.25)
+        Q3 = df_cleaned[col].quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - (threshold * IQR)
+        upper_bound = Q3 + (threshold * IQR)
 
-    # IQR stuff
-    Q1 = df_cleaned[col].quantile(0.25)
-    Q3 = df_cleaned[col].quantile(0.75)
-    IQR = Q3 - Q1
-    lower_bound = Q1 - (threshold * IQR)
-    upper_bound = Q3 + (threshold * IQR)
+        rows_before = df_cleaned.shape[0]
+        df_cleaned = df_cleaned[(df_cleaned[col] >= lower_bound) & (df_cleaned[col] <= upper_bound)]
 
-    rows_before = df_cleaned.shape[0]
-    df_cleaned = df_cleaned[(df_cleaned[col] >= lower_bound) & (df_cleaned[col] <= upper_bound)]
+        rows_after = df_cleaned.shape[0]
+        rows_lost = rows_before - rows_after
+        total_rows_lost += rows_lost
 
-    rows_after = df_cleaned.shape[0]
-    rows_lost = rows_before - rows_after
-    total_rows_lost += rows_lost
-
-    print(f'{col} outliers removed, dropped {rows_lost} rows')
+        print(f'{col} outliers removed, dropped {rows_lost} rows')
     print(f'Total rows lost: {total_rows_lost}')
 
     return df_cleaned
@@ -518,7 +518,7 @@ def drop_outliers(df, col, threshold=1.5):
 def final_transforms_save_out(final_df, int_cols, float_cols):
     #now some transforms:
     #TODO: any features I should create through ratios or multiplication before impute and scale?
-
+    temp_df  = final_df.copy()
     #final_df[int_cols] = final_df[int_cols].astype('int64') # shouldn't be needed
     num_cols = int_cols + float_cols
 
@@ -527,8 +527,9 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
     num_nulls.reset_index(inplace=True, drop=False)
     num_nulls.columns = ['column', 'null_count']
     drop_nums = num_nulls.loc[num_nulls['null_count'] > 0.3, 'column'].unique().tolist()
-    impute_nums = num_nulls.loc[num_nulls['null_count'] <= 0.3, 'column'].unique().tolist()
-    num_cols = [i for i in num_cols if i not in drop_nums]
+    impute_nums = num_nulls.loc[(num_nulls['null_count'] <= 0.3) & (num_nulls['null_count'] > 0
+                                                                    ), 'column'].unique().tolist()
+    num_cols = [i for i in num_cols if i not in drop_nums and i!='win']
     # set up threshold:
     if len(drop_nums) > 0:
         print('dropping columns', final_df.shape)
@@ -537,23 +538,26 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
     # if there are a lot, try knn impute instead
 
 
-    X_cols = [i for i in final_df.columns if i != 'win']
+    X_cols = [i for i in final_df.columns if i not in ['win', 'summoner_id']]
     X = final_df[X_cols]
     y = final_df['win']
 
     #LDA using to reduce dimensionality for binary classification
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-    df_list = [X_train, X_test, y_train, y_test]
+    df_list = [X_train, X_test] # no need to impute y
 
     # impute
-    for num_df in df_list:
+    for idx, num_df in enumerate(df_list):
+        i = 0
         for col in impute_nums:
+            i+=1
+            print(i, col)
             median = num_df[col].median()
-            num_df[col].fillna(median, inplace=True)
-            num_df = drop_outliers(num_df, col, threshold=1.5)
+            num_df[col] = num_df[col].fillna(median)
+        df_list[idx] = drop_outliers(num_df, num_cols, threshold=1.5)
 
     # Do scaling
-    X_train, X_test, y_train, y_test = df_list
+    X_train, X_test = df_list
     scaler = StandardScaler()
     X_train_standardized = scaler.fit_transform(X_train)
     X_test_standardized = scaler.transform(X_test)
