@@ -15,7 +15,10 @@ from sklearn.impute import KNNImputer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from video_game_rank_forecast.a0_reg_class_api_call import tiers_list
-from video_game_rank_forecast.a1_class_data_format_clean import key_col_holder
+from video_game_rank_forecast.a1_class_data_format_clean import key_col_holder, complex_read_in, \
+    flatten_nest_dict,find_participant_number, flatten_and_reduce_df, categorical_cleaning, \
+    drop_outliers,save_out_format
+
 pd.options.mode.chained_assignment = None
 
 # This will again take some reshaping. Iprobably want some or average of the key variables?
@@ -28,6 +31,7 @@ pd.options.mode.chained_assignment = None
 # and merge that in from the all tier summoner ID lists I created. Idon't have their initial rank,
 # just their final rank. would be interesting to take wins and losses to get games played,
 # and use that as an attribute too.
+
 
 def convert_rank_to_int(tier, rank, lp):
     '''
@@ -48,8 +52,47 @@ def convert_rank_to_int(tier, rank, lp):
     return final_value
 
 
-def agg_for_task(clean_df):
+def agg_for_reg_task(clean_df, int_cols, float_cols): # this is different than
+    # final_transforms_save_out(final_df,
+    # int_cols, float_cols):
     # used to bring up to level necessary for overall placement
     print('aggregating for regression')
 
 final_rank = '' # will need to read in from original dataset and use funciton converter
+
+
+
+
+
+if __name__ == '__main__':
+    print('start!')
+    start_time = time.time()
+    past_run_date = '01-01-2025'
+
+    parquet_high_name = dir_base + f"data/class_raw_data_{past_run_date}"
+
+    common_columns = ['metadata', 'info', 'summoner_id'] # need to find rank and tier in this
+    start_df = complex_read_in(parquet_high_name, tiers_list, common_columns)
+    start_df.reset_index(inplace=True, drop=True)
+    print('read in complete', (time.time() - start_time) / 60)
+
+    # Select columns excluding boolean columns
+    start_df = start_df.apply(
+        lambda col: col.map(lambda x: int(x) if isinstance(x, float) and x.is_integer()
+        else (float(x) if isinstance(x, float) else x)))
+    bool_cols = start_df.select_dtypes(include=['bool']).columns.tolist()
+    bool_cols.append('objectives_horde_first')
+    start_df[bool_cols] = start_df[bool_cols].astype('Int64')
+    int_cols = start_df.select_dtypes(include=['int']).columns.tolist()
+    float_cols = start_df.select_dtypes(include=['float']).columns.tolist()
+    cat_cols = [i for i in start_df.columns if i not in int_cols+float_cols]
+    # summoner id is not a category, it is an identifier
+    if len(int_cols) + len(float_cols) + len(cat_cols) != start_df.shape[1]:
+        raise ValueError('column count doesnt align')
+    id_col = ['summoner_id']
+    cat_cols.remove('summoner_id')
+    cat_cols.remove('summonerId')
+    start_df = start_df.drop(columns=['summonerId'])
+    cat_df = categorical_cleaning(start_df, cat_cols)
+    X_train, X_test, y_train, y_test = final_df = agg_for_reg_task(cat_df, int_cols, float_cols)
+    save_out_format(X_train, X_test, y_train, y_test)

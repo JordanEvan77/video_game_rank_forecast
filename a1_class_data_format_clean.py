@@ -414,7 +414,6 @@ def early_eda(raw_df, start_time):
         plt.savefig(dir_base + f"figures/bar_plots//impact_bar_plot_{j}.jpeg")
         #plt.show()
         plt.close()
-    # TODO: Check these too
     # any other key eda items to explore?
     # return nothing
 
@@ -587,8 +586,9 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
     plt.savefig(dir_base + f"figures/LDA_review.jpeg")
     plt.show() # not too much overlap!
 
-    X_train_lda = lda.fit_transform(X_train, y_train)
-    X_test_lda = lda.transform(X_test)
+    X_train_lda = lda.transform(X_train_standardized)
+    X_test_lda = lda.transform(X_test_standardized)
+    print('lda result', X_train_lda.shape)
 
     return X_train_lda, X_test_lda, y_train, y_test
 
