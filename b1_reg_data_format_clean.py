@@ -1,11 +1,31 @@
-# This will again take some reshaping. We probably want some or average of the key variables?
-# Or something else that shows game to game improvement? We want to measure how someone can climb
+from setup.setups import dir_base
+import pandas as pd
+import numpy as np
+import time
+import random
+from datetime import datetime
+import os
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import LabelEncoder
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.metrics import accuracy_score
+from imblearn.over_sampling import SMOTE
+from sklearn.impute import KNNImputer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from video_game_rank_forecast.a0_reg_class_api_call import tiers_list
+from video_game_rank_forecast.a1_class_data_format_clean import key_col_holder
+pd.options.mode.chained_assignment = None
+
+# This will again take some reshaping. Iprobably want some or average of the key variables?
+# Or something else that shows game to game improvement? Iwant to measure how someone can climb
 # and improve, so maybe difference between the min and max, to show improvment? Or difference
 # between average early on and average later on?
 
 
 #I will need to convert the tier, rank and LP into a single integer, like a sliding scale,
-# and merge that in from the all tier summoner ID lists I created. We don't have their initial rank,
+# and merge that in from the all tier summoner ID lists I created. Idon't have their initial rank,
 # just their final rank. would be interesting to take wins and losses to get games played,
 # and use that as an attribute too.
 

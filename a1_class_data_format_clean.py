@@ -200,7 +200,7 @@ def flatten_and_reduce_df(start_df, start_time):
     meta_temp = start_df.iloc[1, 0]
     #print('list of keys in meta', meta_temp.keys())
     # list of keys in info dict_keys(['dataVersion', 'matchId', 'participants'])
-    # these aren't needed? since we already have summoner ID
+    # these aren't needed? since Ialready have summoner ID
 
     info_temp = start_df.iloc[1, 1]
     #print('list of keys in info', info_temp.keys())
@@ -219,7 +219,7 @@ def flatten_and_reduce_df(start_df, start_time):
     # GAME MODE MUST BE CLASSIC:
     raw_df = raw_df[raw_df['gameMode'] == "CLASSIC"]
 
-    # now we want to check those columns in the main data frame, and if the summonerid is in
+    # now Iwant to check those columns in the main data frame, and if the summonerid is in
     # there, keep the participant number in a new column
     id_columns = [col for col in flat_df.columns if any(substring in col for substring in [
         'summonerId'])]
@@ -275,7 +275,7 @@ def flatten_and_reduce_df(start_df, start_time):
     # now drop all other teams columns and keep commons
     team_0_keep = [j for j in reduce_cols_again.columns if j not in team_cols_1]
     team_1_keep = [j for j in reduce_cols_again.columns if j not in team_cols_0]
-    team_0_df = team_0_df[team_0_keep] # we want
+    team_0_df = team_0_df[team_0_keep] # Iwant
     team_1_df = team_1_df[team_1_keep]
 
     #then a rename dictionary that unifies columes
@@ -470,15 +470,13 @@ def categorical_cleaning(cat_df, cat_cols):
     return df_imputed
 
 
-def class_specific_cleaning(X, y, X_cols):
-    # class imbalance? We want to have an equal number of won and lost games
-    # do we care aobut rank, or should that be ignored?
+def class_specific_cleaning(X, y):
+    # class imbalance? Iwant to have an equal number of won and lost games
+    # do Icare aobut rank, or should that be ignored?
     sm = SMOTE(random_state=42)
     X_res, y_res = sm.fit_resample(X, y)
-    df_resampled = pd.DataFrame(X_res, columns=X_cols)
 
-
-    return df_resampled # do I want it to be dataframes or series?
+    return X_res, y_res
 
 
 
@@ -568,19 +566,17 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
     X_test_standardized = scaler.transform(X_test)
 
     # now do balancing, within split groups
-    X_train_standardized, y_train = class_specific_cleaning(X_train_standardized , y_train, X_cols)
-    X_test_standardized, y_test = class_specific_cleaning(X_test_standardized, y_test, X_cols)
+    X_train_standardized, y_train = class_specific_cleaning(X_train_standardized , y_train)
+    X_test_standardized, y_test = class_specific_cleaning(X_test_standardized, y_test)
 
     # Dimension reduction
     lda = LinearDiscriminantAnalysis()
     lda.fit(X_train_standardized, y_train)
     y_pred = lda.predict(X_test_standardized)
-    #X_train_lda = lda.fit_transform(X_train, y_train)
-    #X_test_lda = lda.transform(X_test)
 
     # Calculate accuracy
     accuracy = accuracy_score(y_test, y_pred)
-    print(f"Accuracy: {accuracy}")
+    print(f"Accuracy: {accuracy}") #90% accuracy is good for what I am doing~
 
 
     X_lda = lda.transform(X_train_standardized)
@@ -588,10 +584,13 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
     plt.hist(X_lda[y_train == 1], alpha=0.5, label='Class 1')
     plt.legend(loc='best')
     plt.title('LDA projection of the training data')
-    plt.show()
+    plt.savefig(dir_base + f"figures/LDA_review.jpeg")
+    plt.show() # not too much overlap!
 
+    X_train_lda = lda.fit_transform(X_train, y_train)
+    X_test_lda = lda.transform(X_test)
 
-    return X_train_standardized, X_test_standardized, y_train, y_test
+    return X_train_lda, X_test_lda, y_train, y_test
 
 
 #TODO: When I have all of  this sorted out above, I should turn it into a COlumnTransformer that
