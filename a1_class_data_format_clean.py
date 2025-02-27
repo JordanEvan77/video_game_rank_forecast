@@ -37,7 +37,6 @@ def complex_read_in(parquet_high_name, tiers_list, common_columns):
             # now batch read:
             df = flatten_and_reduce_df(df, start_time)
             df_list.append(df)
-        break # just for testing, need to make sure column names are good
 
     return pd.concat(df_list, axis=0)
 
@@ -601,7 +600,7 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
 #TODO: I should also run it on the full dataset instead of the half set!
 
 def save_out_format(X_train_lda, X_test_lda, X_train, X_test, y_train, y_test, task='class'):
-    os.makedirs(dir_base + f"data/clean_data_{past_run_date}", exist_ok=True)
+    os.makedirs(dir_base + f"data/{task}_clean_data_{past_run_date}", exist_ok=True)
 
     pd.DataFrame(X_train_lda).to_parquet(
         dir_base + f"data/{task}_clean_data_{past_run_date}/x_train_reduc.parquet")
