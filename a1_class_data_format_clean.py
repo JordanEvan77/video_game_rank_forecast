@@ -584,13 +584,15 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
     plt.legend(loc='best')
     plt.title('LDA projection of the training data')
     plt.savefig(dir_base + f"figures/LDA_review.jpeg")
-    plt.show() # not too much overlap!
+    # plt.show() # not too much overlap!
 
     X_train_lda = lda.transform(X_train_standardized)
     X_test_lda = lda.transform(X_test_standardized)
     print('lda result', X_train_lda.shape)
 
-    return X_train_lda, X_test_lda, y_train, y_test
+    return X_train_lda, X_test_lda, X_train_standardized, X_test_standardized, y_train, y_test
+    # I want to compare both lda and non lda outputs
+
 
 
 #TODO: When I have all of  this sorted out above, I should turn it into a COlumnTransformer that
@@ -598,14 +600,23 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
 
 #TODO: I should also run it on the full dataset instead of the half set!
 
-def save_out_format(X_train, X_test, y_train, y_test):
+def save_out_format(X_train_lda, X_test_lda, X_train, X_test, y_train, y_test, task='class'):
     os.makedirs(dir_base + f"data/clean_data_{past_run_date}", exist_ok=True)
 
-    X_train.to_parquet(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet")
-    X_test.to_parquet(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet")
-    y_train.to_parquet(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet")
-    y_test.to_parquet(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet")
+    pd.DataFrame(X_train_lda).to_parquet(
+        dir_base + f"data/{task}_clean_data_{past_run_date}/x_train_reduc.parquet")
+    pd.DataFrame(X_test_lda).to_parquet(
+        dir_base + f"data/{task}_clean_data_{past_run_date}/x_test_reduc.parquet")
+    pd.DataFrame(X_train).to_parquet(
+        dir_base + f"data/{task}_clean_data_{past_run_date}/x_train.parquet")
+    pd.DataFrame(X_test).to_parquet(
+        dir_base + f"data/{task}_clean_data_{past_run_date}/x_test.parquet")
+    pd.DataFrame(y_train).to_parquet(
+        dir_base + f"data/{task}_clean_data_{past_run_date}/y_train.parquet")
+    pd.DataFrame(y_test).to_parquet(
+        dir_base + f"data/{task}_clean_data_{past_run_date}/y_train.parquet")
 
+    print('final save out complete time:', (time.time() - start_time) / 60)
 
 
 if __name__ == '__main__':
@@ -642,8 +653,8 @@ if __name__ == '__main__':
     cat_cols.remove('summonerId')
     start_df = start_df.drop(columns=['summonerId'])
     cat_df = categorical_cleaning(start_df, cat_cols)
-    X_train, X_test, y_train, y_test = final_df = final_transforms_save_out(cat_df, int_cols,
-                                                                          float_cols)
-    save_out_format(X_train, X_test, y_train, y_test)
+    X_train_lda, X_test_lda,X_train, X_test, y_train, y_test = final_df = \
+        final_transforms_save_out(cat_df, int_cols, float_cols)
+    save_out_format(X_train_lda, X_test_lda, X_train, X_test, y_train, y_test, task='class')
 
 
