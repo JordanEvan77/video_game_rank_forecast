@@ -476,9 +476,9 @@ def class_specific_cleaning(X, y, X_cols):
     sm = SMOTE(random_state=42)
     X_res, y_res = sm.fit_resample(X, y)
     df_resampled = pd.DataFrame(X_res, columns=X_cols)
-    df_resampled['target'] = y_res
 
-    return df_resampled
+
+    return df_resampled # do I want it to be dataframes or series?
 
 
 
@@ -575,6 +575,8 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
     lda = LinearDiscriminantAnalysis()
     lda.fit(X_train_standardized, y_train)
     y_pred = lda.predict(X_test_standardized)
+    #X_train_lda = lda.fit_transform(X_train, y_train)
+    #X_test_lda = lda.transform(X_test)
 
     # Calculate accuracy
     accuracy = accuracy_score(y_test, y_pred)

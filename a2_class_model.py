@@ -1,5 +1,4 @@
 from setup.setups import dir_base
-
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 import numpy as np
@@ -8,6 +7,7 @@ import pandas as pd
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score,\
     classification_report
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
+import pickle
 
 
 def log_model(X_train, X_test, y_train, y_test):
@@ -27,7 +27,7 @@ def log_model(X_train, X_test, y_train, y_test):
     print(f"Recall: {recall}")
     print(f"F1 Score: {f1}")
     print(f"ROC-AUC: {roc_auc}")
-    print(class_report)
+    print(class_report) # just as a baseline for the xgboost
 
 
 
@@ -68,10 +68,32 @@ def xgb_model(X_train, X_test, y_train, y_test):
     gridsearch.fit(X_train, y_train)
     bestparams = gridsearch.bestparams
     bestscore = gridsearch.bestscore
+    print('best parameters', bestparams)
 
     #TODO: Reeview best params and make sure they make sense
-    model = XGBClassifier(best_params)
-    model.fit(Xtrain, ytrain)
+    final_model = XGBClassifier(bestparams)
+    final_model.fit(X_train, y_train)
+
+    y_pred = final_model.predict(X_test)
+    y_pred_proba = final_model.predict_proba(X_test)[:, 1]
+
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+    roc_auc = roc_auc_score(y_test, y_pred_proba)
+
+    print(f"Final Accuracy: {accuracy}")
+    print(f"Final Precision: {precision}")
+    print(f"Final Recall: {recall}")
+    print(f"Final F1 Score: {f1}")
+    print(f"Final ROC-AUC: {roc_auc}")
+
+    #Save out final model
+    with open(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet", 'wb') as file:
+        pickle.dump(final_model, file)
+
+
 
 
 if __name__ == '__main__':
