@@ -118,7 +118,7 @@ def xbg_feat_import(final_model):
     with open(dir_base + f"data/clean_data_{past_run_date}/xgboost_best_model.pkl", 'wb') as file:
         pickle.dump(final_model, file)
     print('Done', (time.time()-start_time)/60)
-
+    #TODO: Look at the stuff above and save it out, plus any key take aways, write out here
 
 
 if __name__ == '__main__':
