@@ -101,13 +101,13 @@ if __name__ == '__main__':
     past_run_date = '01-01-2025'
 
     X_train = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/x_train.parquet")
-    X_test = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/x_train.parquet")
+    X_test = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/x_test.parquet")
     X_train_reduc = pd.read_parquet(dir_base + f"data/class_clean_data"
                                             f"_{past_run_date}/x_train_reduc.parquet")
     X_test_reduc = pd.read_parquet(dir_base + f"data/class_clean_data"
-                                            f"_{past_run_date}/x_train_reduc.parquet")
+                                            f"_{past_run_date}/x_test_reduc.parquet")
     y_train = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/y_train.parquet")
-    y_test = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/y_train.parquet")
+    y_test = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/y_test.parquet")
 
     print('final read in complete time:', (time.time() - start_time) / 60)
 

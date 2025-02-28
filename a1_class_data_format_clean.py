@@ -37,13 +37,14 @@ def complex_read_in(parquet_high_name, tiers_list, common_columns):
             # now batch read:
             df = flatten_and_reduce_df(df, start_time)
             df_list.append(df)
-
+        break #just for testing
     return pd.concat(df_list, axis=0)
 
 
 def key_col_holder():
     key_columns = ['win', 'summonerId',
-        "kills", # TODO: Too correlated? this is extremely obvious and correlated, still want to check on it though
+        #"kills", # TODO: Too correlated? this is extremely obvious and correlated, still want to
+                   # check on it though
         "12AssistStreakCount",
         "HealFromMapSmyces",
         "SWARM_DefeatMiniBosses",
@@ -63,9 +64,9 @@ def key_col_holder():
         "teamDamagePercentage",
         "visionScorePerMinute",
         "wardTakedownsBefore20M",
-        "assists", # TODO: Too correlated?
+        #"assists", # TODO: Too correlated?
         "baronKills", # keep as this is if the player killed, not team
-        "deaths", # TODO: Too correlated?
+        #"deaths", # TODO: Too correlated?
         "damageDealtToObjectives",
         "damageDealtToTurrets",
         "damageSelfMitigated",
@@ -308,7 +309,7 @@ def early_eda(raw_df, start_time):
 
 
     # which ones seem interesting? check correlation
-    corr_matrix = raw_df[float_cols + int_cols].corr()
+    corr_matrix = raw_df[float_cols + int_cols+ ['win']].corr()
     plt.figure(figsize=(10, 8))
     sns.heatmap(corr_matrix, annot=False, cmap='coolwarm', linewidths=.5)
     plt.title('Correlation Heatmap of Numerical Columns')
@@ -613,7 +614,7 @@ def save_out_format(X_train_lda, X_test_lda, X_train, X_test, y_train, y_test, t
     pd.DataFrame(y_train).to_parquet(
         dir_base + f"data/{task}_clean_data_{past_run_date}/y_train.parquet")
     pd.DataFrame(y_test).to_parquet(
-        dir_base + f"data/{task}_clean_data_{past_run_date}/y_train.parquet")
+        dir_base + f"data/{task}_clean_data_{past_run_date}/y_test.parquet")
 
     print('final save out complete time:', (time.time() - start_time) / 60)
 
@@ -656,4 +657,5 @@ if __name__ == '__main__':
         final_transforms_save_out(cat_df, int_cols, float_cols)
     save_out_format(X_train_lda, X_test_lda, X_train, X_test, y_train, y_test, task='class')
 
+# The async data is from 2-3-25
 
