@@ -515,7 +515,6 @@ def drop_outliers(df, num_cols, threshold=1.5):
 def final_transforms_save_out(final_df, int_cols, float_cols):
     #now some transforms:
     #TODO: any features I should create through ratios or multiplication before impute and scale?
-    temp_df  = final_df.copy()
     #final_df[int_cols] = final_df[int_cols].astype('int64') # shouldn't be needed
     num_cols = int_cols + float_cols
 
@@ -532,7 +531,6 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
         print('dropping columns', final_df.shape)
         final_df = final_df.drop(columns=drop_nums)
         print('dropping columns', final_df.shape)
-    # if there are a lot, try knn impute instead
 
 
     X_cols = [i for i in final_df.columns if i not in ['win', 'summoner_id', 'summonerid']]

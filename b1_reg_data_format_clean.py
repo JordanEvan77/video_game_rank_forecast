@@ -52,13 +52,65 @@ def convert_rank_to_int(tier, rank, lp):
     return final_value
 
 
-def agg_for_reg_task(clean_df, int_cols, float_cols): # this is different than
+def agg_for_reg_task(final_df, int_cols, float_cols): # this is different than
     # final_transforms_save_out(final_df,
     # int_cols, float_cols):
     # used to bring up to level necessary for overall placement
+
+    num_cols = int_cols + float_cols
+    # Numeric Cleaning
+    num_nulls = pd.DataFrame(final_df[num_cols].isna().mean() * 100)
+    num_nulls.reset_index(inplace=True, drop=False)
+    num_nulls.columns = ['column', 'null_count']
+    drop_nums = num_nulls.loc[num_nulls['null_count'] > 0.3, 'column'].unique().tolist()
+    impute_nums = num_nulls.loc[(num_nulls['null_count'] <= 0.3) & (num_nulls['null_count'] > 0
+                                                                    ), 'column'].unique().tolist()
+    num_cols = [i for i in num_cols if i not in drop_nums and i != 'win']
+    # set up threshold:
+    if len(drop_nums) > 0:
+        print('dropping columns', final_df.shape)
+        final_df = final_df.drop(columns=drop_nums)
+        print('dropping columns', final_df.shape)
+
+    #TODO: Now do agg
     print('aggregating for regression')
 
-    #TODO: Call a lambda function on this?
+    convert_rank_to_int #TODO: Call a lambda function on this?
+
+
+    #TODO: After agg, begin working on this:
+    X_cols = [i for i in final_df.columns if i not in ['win', 'summoner_id', 'summonerid']]
+    X = final_df[X_cols]
+    y = final_df['win']
+
+    # LDA using to reduce dimensionality for binary classification
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    df_list = [X_train, X_test]  # no need to impute y
+
+    # impute
+    for idx, num_df in enumerate(df_list):
+        i = 0
+        for col in impute_nums:
+            i += 1
+            print(i, col)
+            median = num_df[col].median()
+            num_df[col] = num_df[col].fillna(median)
+        df_list[idx] = drop_outliers(num_df, num_cols, threshold=1.5)  # TODO: The losses may be
+        # too large here, may want to impute!
+
+    # Do scaling
+    X_train, X_test = df_list
+    y_train = y_train.loc[X_train.index]
+    y_test = y_test.loc[X_test.index]
+    assert X_train.index.equals(y_train.index)
+    assert X_test.index.equals(y_test.index)
+    scaler = StandardScaler()
+    X_train_standardized = scaler.fit_transform(X_train)
+    X_test_standardized = scaler.transform(X_test)
+
+
+    #Dimensionality reduction?
+
 
     return X_train, X_test, y_train, y_test
 
@@ -105,4 +157,7 @@ if __name__ == '__main__':
 
     #TODO: All numeric cleaning will be done in the below function, since I have to agg it first
     X_train, X_test, y_train, y_test = final_df = agg_for_reg_task(cat_df, int_cols, float_cols)
+
+    #TODO: once everything is at the right aggregated level, with the regression target isolated,
+    # then go ahead and save
     save_out_format(X_train, X_test, y_train, y_test)
