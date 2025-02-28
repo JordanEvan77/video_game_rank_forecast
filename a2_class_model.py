@@ -8,6 +8,11 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
     classification_report
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 import pickle
+import xgboost as xgb
+from xgboost import plot_importance
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+
 start_time = time.time()
 
 def log_model(X_train, X_test, y_train, y_test):
@@ -33,7 +38,7 @@ def log_model(X_train, X_test, y_train, y_test):
 
 def xgb_model(X_train, X_test, y_train, y_test):
     #XGBOOST
-    xgb = XGBClassifier(use_label_encoder=False, eval_metric='logloss')
+    xgb = XGBClassifier(eval_metric='logloss')
 
     xgb.fit(X_train, y_train)
 
@@ -57,17 +62,17 @@ def xgb_model(X_train, X_test, y_train, y_test):
         'n_estimators': [100, 200, 300],
         'learning_rate': [0.01, 0.1, 0.2],
         'max_depth': [3, 5, 7],
-        'minchildweight': [1, 3, 5],
         'gamma': [0, 0.1, 0.2],
         'subsample': [0.8, 0.9, 1.0],
         'colsample_bytree': [0.8, 0.9, 1.0]
     }
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=37)
-    gridsearch = GridSearchCV(estimator=xgb, param_grid=param_grid, scoring='rocauc', cv=cv,
+    gridsearch = GridSearchCV(estimator=xgb, param_grid=param_grid, scoring='roc_auc', cv=cv,
                               n_jobs=-1, verbose=5)
     gridsearch.fit(X_train, y_train)
-    bestparams = gridsearch.bestparams
-    bestscore = gridsearch.bestscore
+    bestparams = gridsearch.best_params_
+    bestscore = gridsearch.best_params_
+    print('grid search time:', (time.time()-start_time)/60)
     print('best parameters', bestparams)
 
     #TODO: Reeview best params and make sure they make sense
@@ -88,11 +93,31 @@ def xgb_model(X_train, X_test, y_train, y_test):
     print(f"Final Recall: {recall}")
     print(f"Final F1 Score: {f1}")
     print(f"Final ROC-AUC: {roc_auc}")
+    return final_model
+
+
+
+#TODO: Add explainable portion of analytics, why is it so accurate, what is the driver?
+def xbg_feat_import(final_model):
+
+    #weight and gain are most useful for my purposes
+    weight_importance = final_model.get_booster().get_score(
+        importance_type='weight')  # You can use 'weight', 'gain', or 'cover'
+    weight_importance_df = pd.DataFrame(weight_importance.items(), columns=['Feature',
+                                                                            'Importance'])
+
+    gain_importance = final_model.get_booster().get_score(
+        importance_type='weight')  # You can use 'weight', 'gain', or 'cover'
+    gain_importance_df = pd.DataFrame(gain_importance.items(), columns=['Feature',
+                                                                            'Importance'])
+
+    plot_importance(final_model, importance_type='weight')  # You can use 'weight', 'gain', or 'cover'
+    plt.show()
 
     #Save out final model
-    with open(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet", 'wb') as file:
+    with open(dir_base + f"data/clean_data_{past_run_date}/xgboost_best_model.pkl", 'wb') as file:
         pickle.dump(final_model, file)
-
+    print('Done', (time.time()-start_time)/60)
 
 
 
