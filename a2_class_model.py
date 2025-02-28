@@ -76,7 +76,8 @@ def xgb_model(X_train, X_test, y_train, y_test):
     print('best parameters', bestparams)
 
     #TODO: Reeview best params and make sure they make sense
-    final_model = XGBClassifier(bestparams)
+    final_model = XGBClassifier(bestparams) #{'colsample_bytree': 0.8, 'gamma': 0.2,
+    # 'learning_rate': 0.2, 'max_depth': 5, 'n_estimators': 100, 'subsample': 0.9} FIT!
     final_model.fit(X_train, y_train)
 
     y_pred = final_model.predict(X_test)
