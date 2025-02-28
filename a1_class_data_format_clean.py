@@ -564,7 +564,7 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
     X_test_standardized = scaler.transform(X_test)
 
     # now do balancing, within split groups
-    X_train_standardized, y_train = class_specific_cleaning(X_train_standardized , y_train)
+    X_train_standardized, y_train = class_specific_cleaning(X_train_standardized, y_train)
     X_test_standardized, y_test = class_specific_cleaning(X_test_standardized, y_test)
 
     # Dimension reduction

@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
     classification_report
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 import pickle
-
+start_time = time.time()
 
 def log_model(X_train, X_test, y_train, y_test):
     #Logistic regression
@@ -99,7 +99,23 @@ def xgb_model(X_train, X_test, y_train, y_test):
 if __name__ == '__main__':
     print('start!')
     past_run_date = '01-01-2025'
-    X_train = pd.read_parquet(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet")
-    X_test = pd.read_parquet(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet")
-    y_train = pd.read_parquet(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet")
-    y_test = pd.read_parquet(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet")
+
+    X_train = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/x_train.parquet")
+    X_test = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/x_train.parquet")
+    X_train_reduc = pd.read_parquet(dir_base + f"data/class_clean_data"
+                                            f"_{past_run_date}/x_train_reduc.parquet")
+    X_test_reduc = pd.read_parquet(dir_base + f"data/class_clean_data"
+                                            f"_{past_run_date}/x_train_reduc.parquet")
+    y_train = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/y_train.parquet")
+    y_test = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/y_train.parquet")
+
+    print('final read in complete time:', (time.time() - start_time) / 60)
+
+    log_model(X_train, X_test, y_train, y_test) # y isn't the rignt size
+    xgb_model(X_train, X_test, y_train, y_test)
+
+    #now with reduced dimension:
+    log_model(X_train_reduc, X_test_reduc, y_train, y_test)
+    xgb_model(X_train_reduc, X_test_reduc, y_train, y_test)
+
+
