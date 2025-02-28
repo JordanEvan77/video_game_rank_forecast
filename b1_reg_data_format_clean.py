@@ -58,6 +58,11 @@ def agg_for_reg_task(clean_df, int_cols, float_cols): # this is different than
     # used to bring up to level necessary for overall placement
     print('aggregating for regression')
 
+    #TODO: Call a lambda function on this?
+
+    return X_train, X_test, y_train, y_test
+
+
 final_rank = '' # will need to read in from original dataset and use funciton converter
 
 
@@ -93,6 +98,11 @@ if __name__ == '__main__':
     cat_cols.remove('summoner_id')
     cat_cols.remove('summonerId')
     start_df = start_df.drop(columns=['summonerId'])
+
+
     cat_df = categorical_cleaning(start_df, cat_cols)
+    #TODO: make sure the categorical cleaning looks right
+
+    #TODO: All numeric cleaning will be done in the below function, since I have to agg it first
     X_train, X_test, y_train, y_test = final_df = agg_for_reg_task(cat_df, int_cols, float_cols)
     save_out_format(X_train, X_test, y_train, y_test)
