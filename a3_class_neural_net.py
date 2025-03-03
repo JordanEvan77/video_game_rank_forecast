@@ -44,6 +44,7 @@ def build_nn(X_train, X_test, y_train, y_test):
                                 np.argmax(model_bin.predict([X_test]), axis=1)))
 
 
+
 if __name__ == '__main__':
     print('start!')
     past_run_date = '01-01-2025'
@@ -51,3 +52,7 @@ if __name__ == '__main__':
     X_test = pd.read_parquet(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet")
     y_train = pd.read_parquet(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet")
     y_test = pd.read_parquet(dir_base + f"data/clean_data_{past_run_date}/x_train.parquet")
+    build_nn(X_train, X_test, y_train, y_test)
+
+
+

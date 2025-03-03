@@ -68,7 +68,7 @@ def xgb_model(X_train, X_test, y_train, y_test):
     }
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=37)
     gridsearch = GridSearchCV(estimator=xgb, param_grid=param_grid, scoring='roc_auc', cv=cv,
-                              n_jobs=-1, verbose=5)
+                              n_jobs=-1, verbose=1)
     gridsearch.fit(X_train, y_train)
     bestparams = gridsearch.best_params_
     bestscore = gridsearch.best_params_
@@ -76,8 +76,12 @@ def xgb_model(X_train, X_test, y_train, y_test):
     print('best parameters', bestparams)
 
     #TODO: Reeview best params and make sure they make sense
-    final_model = XGBClassifier(bestparams) #{'colsample_bytree': 0.8, 'gamma': 0.2,
-    # 'learning_rate': 0.2, 'max_depth': 5, 'n_estimators': 100, 'subsample': 0.9} FIT!
+    final_model = XGBClassifier(colsample_bytree=bestparams['colsample_bytree'],
+                                gamma=bestparams['gamma'],
+                                learning_rate=bestparams['learning_rate'],
+                                max_depth=bestparams['max_depth'],
+                                n_estimators=bestparams['n_estimators'],
+                                subsample=bestparams['subsample'])
     final_model.fit(X_train, y_train)
 
     y_pred = final_model.predict(X_test)
