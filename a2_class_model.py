@@ -146,6 +146,6 @@ if __name__ == '__main__':
 
     #now with reduced dimension:
     log_model(X_train_reduc, X_test_reduc, y_train, y_test)
-    xgb_model(X_train_reduc, X_test_reduc, y_train, y_test)
-
+    final_model = xgb_model(X_train_reduc, X_test_reduc, y_train, y_test)
+    xbg_feat_import(final_model)
 
