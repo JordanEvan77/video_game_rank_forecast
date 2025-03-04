@@ -115,6 +115,10 @@ def xbg_feat_import(final_model):
         importance_type='weight')  # You can use 'weight', 'gain', or 'cover'
     gain_importance_df = pd.DataFrame(gain_importance.items(), columns=['Feature',
                                                                             'Importance'])
+    weight_importance_df.to_csv(dir_base + f"data/clean_data_"
+                                           f"{past_run_date}/xgboost_feat_import_weight.csv")
+    gain_importance_df.to_csv(dir_base + f"data/clean_data_"
+                                         f"{past_run_date}/xgboost_feat_import_gain.csv")
 
     plot_importance(final_model, importance_type='weight')  # You can use 'weight', 'gain', or 'cover'
     plt.show()

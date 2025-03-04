@@ -112,7 +112,7 @@ def agg_for_reg_task(final_df, int_cols, float_cols): # this is different than
     #Dimensionality reduction?
 
 
-    return X_train, X_test, y_train, y_test
+    return X_train_reduc, X_test_reduc, X_train, X_test, y_train, y_test
 
 
 final_rank = '' # will need to read in from original dataset and use funciton converter
@@ -155,9 +155,11 @@ if __name__ == '__main__':
     cat_df = categorical_cleaning(start_df, cat_cols)
     #TODO: make sure the categorical cleaning looks right
 
+
     #TODO: All numeric cleaning will be done in the below function, since I have to agg it first
-    X_train, X_test, y_train, y_test = final_df = agg_for_reg_task(cat_df, int_cols, float_cols)
+    X_train_reduc, X_test_reduc, X_train, X_test, y_train, y_test = agg_for_reg_task(cat_df, int_cols, float_cols)
+
 
     #TODO: once everything is at the right aggregated level, with the regression target isolated,
     # then go ahead and save
-    save_out_format(X_train, X_test, y_train, y_test, task='reg')
+    save_out_format(X_train_reduc, X_test_reduc, X_train, X_test, y_train, y_test, task='reg')
