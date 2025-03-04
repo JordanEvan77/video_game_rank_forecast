@@ -129,7 +129,7 @@ if __name__ == '__main__':
     parquet_high_name = dir_base + f"data/class_raw_data_{past_run_date}"
 
     common_columns = ['metadata', 'info', 'summoner_id'] # need to find rank and tier in this
-    start_df = complex_read_in(parquet_high_name, tiers_list, common_columns)
+    start_df = complex_read_in(parquet_high_name, tiers_list, common_columns, start_time)
     start_df.reset_index(inplace=True, drop=True)
     print('read in complete', (time.time() - start_time) / 60)
 
@@ -160,4 +160,4 @@ if __name__ == '__main__':
 
     #TODO: once everything is at the right aggregated level, with the regression target isolated,
     # then go ahead and save
-    save_out_format(X_train, X_test, y_train, y_test)
+    save_out_format(X_train, X_test, y_train, y_test, task='reg')
