@@ -41,6 +41,10 @@ def convert_rank_to_int(tier, rank, lp):
     :param lp:
     :return:
     '''
+
+    #TODO: Just read in the full set of summoner IDS from async:
+    #video_game_rank_forecast\data\all_tier_summoner_ids.csv!
+    rank_df = pd.read_csv('video_game_rank_forecast\data\all_tier_summoner_ids.csv')
     tier_values = {'Iron': 1000, 'Bronze': 2000, 'Silver': 3000, 'Gold': 4000, 'Platinum': 5000,
         'Diamond': 6000}
     rank_values = {'IV': 100, 'III': 200, 'II': 300, 'I': 400 #TODO: isn't there a rank 5?
@@ -72,14 +76,21 @@ def agg_for_reg_task(final_df, int_cols, float_cols): # this is different than
         final_df = final_df.drop(columns=drop_nums)
         print('dropping columns', final_df.shape)
 
-    #TODO: Now do agg
-    print('aggregating for regression')
+    #Get max rank:
+    rank_df = convert_rank_to_int('', '', '') # TODO: Work on this first above
 
-    convert_rank_to_int #TODO: Call a lambda function on this?
+    # Now do agg
+    print('aggregating for regression')
+    #Reset Index to get ID back
+    final_grp = final_df.groupby(['summoner_id']).mean()
+
+    # are there a couple that would be interesting to get the max from? To show off their most
+    # impressive game?
+
 
 
     #TODO: After agg, begin working on this:
-    X_cols = [i for i in final_df.columns if i not in ['win', 'summoner_id', 'summonerid']]
+    X_cols = [i for i in final_grp.columns if i not in ['win', 'summoner_id', 'summonerid']]
     X = final_df[X_cols]
     y = final_df['win']
 
@@ -146,7 +157,7 @@ if __name__ == '__main__':
     # summoner id is not a category, it is an identifier
     if len(int_cols) + len(float_cols) + len(cat_cols) != start_df.shape[1]:
         raise ValueError('column count doesnt align')
-    id_col = ['summoner_id']
+    # id_col = ['summoner_id']
     cat_cols.remove('summoner_id')
     cat_cols.remove('summonerId')
     start_df = start_df.drop(columns=['summonerId'])

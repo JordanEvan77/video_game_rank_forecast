@@ -17,35 +17,42 @@ async def fetch(session, url, headers):
     start_time = time.time()
     async with session.get(url, headers=headers) as response:
         response_data = await response.json()
-        #print(f"Fetched {url} in {time.time() - start_time:.2f} seconds")
+        print('fetch complete')
         return response_data
 
+async def get_total_pages(session, url, headers):
+    async with session.get(url, headers=headers) as response:
+        response_data = await response.json()
+        print('total pages')
+        return len(response_data)
 
-async def get_summoners_for_tier(tier, sample_size):
-    urls = [f"https://na1.api.riotgames.com/lol/league/v4/entries/RANKED_SOLO_5x5/{tier}/I?page={page}"
-            for page in range(1, sample_size//100 + 2)]
+
+
+async def get_summoners_for_tier(tier):
+    page = 1
+    all_summoners = []
     async with aiohttp.ClientSession() as session:
-        tasks = []
-        for url in urls:
-            task = asyncio.ensure_future(fetch(session, url, headers))
-            tasks.append(task)
-        responses = await asyncio.gather(*tasks)
-        summoners_all_pages = [summoner for response in responses for summoner in response]
-        return summoners_all_pages
+        while True:
+            url = f"https://na1.api.riotgames.com/lol/league/v4/entries/RANKED_SOLO_5x5/{tier}/I?page={page}"
+            summoners = await fetch(session, url, headers)
+            if not summoners:
+                break
+            all_summoners.extend(summoners)
+            page += 1
+    return all_summoners
 
 
-async def get_summoner_list(sample_size, force):
+async def get_summoner_list(force): #sample_size,
     final_sampled_df = pd.DataFrame()
-    sample_id_path = dir_base + f"data/all_tier_summoner_id_size_{sample_size}.csv"
+    sample_id_path = dir_base + "data/all_tier_summoner_ids.csv"
     if os.path.exists(sample_id_path) and not force:
         sampled_df = pd.read_csv(sample_id_path)
         return sampled_df
 
-    for tier in tiers_list:
-        print(f'***** tier:{tier}, time:{(time.time() - overall_start_time) / 60:.2f} minutes *****')
-        summoners_all_pages = await get_summoners_for_tier(tier, sample_size)
-        sampled_summoners = random.sample(summoners_all_pages, min(len(summoners_all_pages), sample_size))
-        sampled_df = pd.DataFrame(sampled_summoners)
+    for tier in tiers_list: # iterate through tiers with wait
+        print(f'***** tier:{tier}, time:{(time.time() - overall_start_time) / 60} minutes *****')
+        summoners_all_pages = await get_summoners_for_tier(tier)
+        sampled_df = pd.DataFrame(summoners_all_pages) # cuasing error
         final_sampled_df = pd.concat([final_sampled_df, sampled_df])
 
     final_cols = [i for i in final_sampled_df.columns if i != 'leagueId']
@@ -182,6 +189,6 @@ if __name__ == '__main__':
 
     print('start!')
     loop = asyncio.get_event_loop()
-    sampled_df = loop.run_until_complete(get_summoner_list(sample_size=10_000, force=False))
+    sampled_df = loop.run_until_complete(get_summoner_list(force=False))
     run_date = datetime.datetime.today().strftime("%m-%d-%Y")
     loop.run_until_complete(get_match_details(sampled_df, run_date, force=False))
