@@ -93,11 +93,11 @@ def xgb_model(X_train, X_test, y_train, y_test):
     f1 = f1_score(y_test, y_pred)
     roc_auc = roc_auc_score(y_test, y_pred_proba)
 
-    print(f"Final Accuracy: {accuracy}")
-    print(f"Final Precision: {precision}")
-    print(f"Final Recall: {recall}")
-    print(f"Final F1 Score: {f1}")
-    print(f"Final ROC-AUC: {roc_auc}")
+    print(f"Best Parameters Final Accuracy: {accuracy}")
+    print(f"Best Parameters Final Precision: {precision}")
+    print(f"Best Parameters Final Recall: {recall}")
+    print(f"Best Parameters Final F1 Score: {f1}")
+    print(f"Best Parameters Final ROC-AUC: {roc_auc}")
     return final_model
 
 
@@ -132,13 +132,13 @@ if __name__ == '__main__':
 
     X_train = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/x_train.parquet")
     X_test = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/x_test.parquet")
+    y_train = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/y_train.parquet")
+    y_test = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/y_test.parquet")
+
     X_train_reduc = pd.read_parquet(dir_base + f"data/class_clean_data"
                                             f"_{past_run_date}/x_train_reduc.parquet")
     X_test_reduc = pd.read_parquet(dir_base + f"data/class_clean_data"
                                             f"_{past_run_date}/x_test_reduc.parquet")
-    y_train = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/y_train.parquet")
-    y_test = pd.read_parquet(dir_base + f"data/class_clean_data_{past_run_date}/y_test.parquet")
-
     print('final read in complete time:', (time.time() - start_time) / 60)
 
     log_model(X_train, X_test, y_train, y_test) # y isn't the rignt size
@@ -148,4 +148,10 @@ if __name__ == '__main__':
     log_model(X_train_reduc, X_test_reduc, y_train, y_test)
     final_model = xgb_model(X_train_reduc, X_test_reduc, y_train, y_test)
     xbg_feat_import(final_model)
+
+
+#TODO: it is important to find out which items are contributing to the models high accuracy,
+# and determine if the items are data leak of sorts, and should be removed. Since this is a
+# coaching mechanism, there are things teh player can't control .
+
 

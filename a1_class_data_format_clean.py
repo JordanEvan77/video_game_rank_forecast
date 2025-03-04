@@ -26,7 +26,7 @@ iter = 0
 
 # lets start with the binary task of game to game victory.
 
-def complex_read_in(parquet_high_name, tiers_list, common_columns):
+def complex_read_in(parquet_high_name, tiers_list, common_columns, start_time):
     parquet_files = []
     df_list = []
     for tier in tiers_list:
@@ -625,7 +625,7 @@ if __name__ == '__main__':
     parquet_high_name = dir_base + f"data/class_raw_data_{past_run_date}"
 
     common_columns = ['metadata', 'info', 'summoner_id']
-    start_df = complex_read_in(parquet_high_name, tiers_list, common_columns)
+    start_df = complex_read_in(parquet_high_name, tiers_list, common_columns, start_time)
     start_df.reset_index(inplace=True, drop=True)
     print('read in complete', (time.time() - start_time) / 60)
     #Now for EDA
