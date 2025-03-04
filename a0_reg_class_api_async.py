@@ -52,7 +52,9 @@ async def get_summoner_list(force): #sample_size,
     for tier in tiers_list: # iterate through tiers with wait
         print(f'***** tier:{tier}, time:{(time.time() - overall_start_time) / 60} minutes *****')
         summoners_all_pages = await get_summoners_for_tier(tier)
-        sampled_df = pd.DataFrame(summoners_all_pages) # cuasing error
+        #need to remove odd strings!
+        summoners_all_pages = [item for item in summoners_all_pages if isinstance(item, dict)]
+        sampled_df = pd.DataFrame(summoners_all_pages) # was cuasing error
         final_sampled_df = pd.concat([final_sampled_df, sampled_df])
 
     final_cols = [i for i in final_sampled_df.columns if i != 'leagueId']
