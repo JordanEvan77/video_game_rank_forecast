@@ -99,33 +99,36 @@ async def get_match_details(sampled_df, run_date, force=True):
                 summoner_id = summoner
                 url_puuid = f"https://na1.api.riotgames.com/lol/summoner/v4/summoners/{summoner_id}"
                 tasks.append(fetch(session, url_puuid, headers))
-                if i % 50 == 0: # trigger async
+                time.sleep(2)  # The api can handle 20 requests per second and 50 per minute
+                if i % 20 == 0: # trigger async for every 50 players
                     responses_puuid = await asyncio.gather(*tasks)
                     tasks = []
                     for response_puuid in responses_puuid:
                         try:
                             puuid = response_puuid['puuid']
-                            start_date = int(time.mktime(time.strptime("2023-01-01", "%Y-%m-%d")))
+                            start_date = int(time.mktime(time.strptime("2024-01-01", "%Y-%m-%d")))
                             end_date = int(time.mktime(time.strptime("2024-12-31", "%Y-%m-%d")))
                             url_matchlist = f"https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?startTime={start_date}&endTime={end_date}"
                             tasks.append(fetch(session, url_matchlist, headers))
+                            time.sleep(2)
                         except KeyError:
                             continue
-                if i % 50 == 0:
+                if i % 20 == 0:
                     match_ids_responses = await asyncio.gather(*tasks)
                     tasks = []
                     for match_ids in match_ids_responses:
                         for match_id in match_ids:
                             url_match = f"https://americas.api.riotgames.com/lol/match/v5/matches/{match_id}"
                             tasks.append(fetch(session, url_match, headers))
-                            if len(tasks) % 50 == 0:
-                                responses_match = await asyncio.gather(*tasks)
-                                tasks = []
-                                for response_match in responses_match:
-                                    if isinstance(response_match, dict):
-                                        dict_temp_match = response_match
-                                        dict_temp_match['summoner_id'] = summoner_id
-                                        match_details.append(dict_temp_match)
+                            time.sleep(2)
+                        # no threshold, some folks may not play 50 games ina season
+                        responses_match = await asyncio.gather(*tasks)
+                        tasks = []
+                        for response_match in responses_match:
+                            if isinstance(response_match, dict):
+                                dict_temp_match = response_match
+                                dict_temp_match['summoner_id'] = summoner_id
+                                match_details.append(dict_temp_match)
 
                 if i % 100 == 0 and match_details:
                     match_df = pd.DataFrame(match_details)
@@ -168,3 +171,8 @@ if __name__ == '__main__':
 
 
 ## FULL RUN SUCCESS ON 3/6 with ALL items, no further sampling needed!
+
+#THis async is more of a proof of concept, it cleans up the code base, and allows for a much
+# higher rate of retrieval. The API can only handle 50 requests a minute, so this async process
+# naturally runs fater than the API can handle, but in a business case, witha  stronger API this
+# approach would be useful.
