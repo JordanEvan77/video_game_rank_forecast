@@ -17,7 +17,7 @@ async def fetch(session, url, headers):
     start_time = time.time()
     async with session.get(url, headers=headers) as response:
         response_data = await response.json()
-        print('fetch complete')
+        #print('fetch complete')
         return response_data
 
 async def get_total_pages(session, url, headers):
@@ -45,10 +45,8 @@ async def get_summoners_for_tier(tier):
 async def get_summoner_list(force): #sample_size,
     final_sampled_df = pd.DataFrame()
     sample_id_path = dir_base + "data/all_tier_summoner_ids.csv"
-    if os.path.exists(sample_id_path) and not force:
-        sampled_df = pd.read_csv(sample_id_path)
-        return sampled_df
-
+    if force != True and os.path.exists(sample_id_path):
+        return pd.read_csv(sample_id_path)
     for tier in tiers_list: # iterate through tiers with wait
         print(f'***** tier:{tier}, time:{(time.time() - overall_start_time) / 60} minutes *****')
         summoners_all_pages = await get_summoners_for_tier(tier)
@@ -80,32 +78,6 @@ def read_with_common_columns(filepath, common_columns):
     return df
 
 
-def get_sample_ids(parquet_high_name, sampled_df_tier, force, min_id, max_id):
-    if not force:
-        print('read in previous version')
-        parquet_files = [parquet_high_name + '\\' + f for f in os.listdir(parquet_high_name) if f.endswith(".parquet")]
-        if not parquet_files:
-            print('Empty tier, just start reading')
-            sampled_df_tier_list = list(sampled_df_tier.summoner_id.unique())
-            return sampled_df_tier_list, sampled_df_tier, min_id, max_id
-        common_columns = get_common_columns(parquet_files)
-        aligned_dfs = []
-        print('got common columns')
-        for filepath in parquet_files:
-            df = read_with_common_columns(filepath, common_columns)
-            aligned_dfs.append(df)
-
-        combined_df = pd.concat(aligned_dfs, axis=0)
-        old_summoners_id = combined_df.summoner_id.unique()
-        print('already saved ids read in:', len(old_summoners_id))
-        min_id += len(old_summoners_id)
-        max_id += len(old_summoners_id)
-        sampled_df_tier = sampled_df_tier[~sampled_df_tier['summoner_id'].isin(old_summoners_id)]
-
-    sampled_df_tier_list = list(sampled_df_tier.summoner_id.unique())
-    return sampled_df_tier_list, sampled_df_tier, min_id, max_id
-
-
 async def get_match_details(sampled_df, run_date, force=True):
     os.makedirs(dir_base + f"data/class_raw_data_{run_date}", exist_ok=True)
     async with aiohttp.ClientSession() as session:
@@ -114,21 +86,19 @@ async def get_match_details(sampled_df, run_date, force=True):
             min_id, max_id = 0, 100
             sampled_df_tier = sampled_df[sampled_df['tier'] == tier]
 
-            parquet_filename = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}/" \
-                                          f"{tier.lower()}_match_details_{run_date}_{min_id}_{max_id}.parquet"
-            parquet_high_name = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}"
+            sampled_df_tier_list = list(sampled_df_tier.summoner_id.unique())
 
-            sampled_df_tier_list, sampled_df_tier, min_id, max_id = get_sample_ids(parquet_high_name,
-                                                                                   sampled_df_tier, force, min_id, max_id)
             match_details = []
             tasks = []
             for i, summoner in enumerate(sampled_df_tier_list):
+                parquet_filename = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}/" \
+                                              f"{tier.lower()}_match_details_{run_date}_{min_id}_{max_id}.parquet"
                 print(f"Grabbing tier: {tier}, {i + 1} out of {sampled_df_tier.shape[0]}, time"
                       f":{(time.time() - overall_start_time) / 60:.2f} minutes")
                 summoner_id = summoner
                 url_puuid = f"https://na1.api.riotgames.com/lol/summoner/v4/summoners/{summoner_id}"
                 tasks.append(fetch(session, url_puuid, headers))
-                if i % 50 == 0:
+                if i % 50 == 0: # trigger async
                     responses_puuid = await asyncio.gather(*tasks)
                     tasks = []
                     for response_puuid in responses_puuid:
@@ -160,8 +130,8 @@ async def get_match_details(sampled_df, run_date, force=True):
                     match_df = pd.DataFrame(match_details)
                     match_df.to_parquet(parquet_filename)
                     print(f"Saved {parquet_filename}, time:{(time.time() - overall_start_time) / 60:.2f} minutes")
-                    min_id += 100
-                    max_id += 100
+                    min_id = i
+                    max_id = i + 100
                     parquet_filename = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}/" \
                                                   f"{tier.lower()}_match_details_{run_date}_{min_id}_{max_id}.parquet"
                     match_details = []

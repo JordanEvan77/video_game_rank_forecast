@@ -33,7 +33,7 @@ pd.options.mode.chained_assignment = None
 # and use that as an attribute too.
 
 
-def convert_rank_to_int(tier, rank, lp):
+def convert_rank_to_int():
     '''
     A way to turn this into an regression task
     :param tier:
