@@ -194,3 +194,6 @@ if __name__ == '__main__':
     sampled_df = loop.run_until_complete(get_summoner_list(force=False))
     run_date = datetime.datetime.today().strftime("%m-%d-%Y")
     loop.run_until_complete(get_match_details(sampled_df, run_date, force=False))
+
+
+## FULL RUN SUCCESS ON 3/6 with ALL items, no further sampling needed!

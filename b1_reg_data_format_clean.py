@@ -44,7 +44,7 @@ def convert_rank_to_int(tier, rank, lp):
 
     #TODO: Just read in the full set of summoner IDS from async:
     #video_game_rank_forecast\data\all_tier_summoner_ids.csv!
-    rank_df = pd.read_csv('video_game_rank_forecast\data\all_tier_summoner_ids.csv')
+    rank_df = pd.read_csv('video_game_rank_forecast\data\\all_tier_summoner_ids.csv')
     tier_values = {'Iron': 1000, 'Bronze': 2000, 'Silver': 3000, 'Gold': 4000, 'Platinum': 5000,
         'Diamond': 6000}
     rank_values = {'IV': 100, 'III': 200, 'II': 300, 'I': 400 #TODO: isn't there a rank 5?
@@ -77,7 +77,7 @@ def agg_for_reg_task(final_df, int_cols, float_cols): # this is different than
         print('dropping columns', final_df.shape)
 
     #Get max rank:
-    rank_df = convert_rank_to_int('', '', '') # TODO: Work on this first above
+    rank_df = convert_rank_to_int() # TODO: Work on this first above
 
     # Now do agg
     print('aggregating for regression')
