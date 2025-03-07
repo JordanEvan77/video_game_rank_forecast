@@ -90,9 +90,10 @@ async def get_match_details(sampled_df, run_date, force=True):
 
             match_details = []
             tasks = []
+            parquet_filename = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}/" \
+                                          f"{tier.lower()}_match_details_{run_date}_{min_id}_" \
+                                          f"{max_id}.parquet" #before loop
             for i, summoner in enumerate(sampled_df_tier_list):
-                parquet_filename = dir_base + f"data/class_raw_data_{run_date}/{tier.lower()}/" \
-                                              f"{tier.lower()}_match_details_{run_date}_{min_id}_{max_id}.parquet"
                 print(f"Grabbing tier: {tier}, {i + 1} out of {sampled_df_tier.shape[0]}, time"
                       f":{(time.time() - overall_start_time) / 60:.2f} minutes")
                 summoner_id = summoner
@@ -136,7 +137,7 @@ async def get_match_details(sampled_df, run_date, force=True):
                                                   f"{tier.lower()}_match_details_{run_date}_{min_id}_{max_id}.parquet"
                     match_details = []
 
-            if tasks:
+            if tasks: # gather the tail end of items
                 responses_match = await asyncio.gather(*tasks)
                 for response_match in responses_match:
                     if isinstance(response_match, dict):
@@ -144,7 +145,7 @@ async def get_match_details(sampled_df, run_date, force=True):
                         dict_temp_match['summoner_id'] = summoner_id
                         match_details.append(dict_temp_match)
 
-            if match_details:
+            if match_details: # final tail end save out
                 match_df = pd.DataFrame(match_details)
                 match_df.to_parquet(parquet_filename)
                 print(f"Final save {parquet_filename}, time:{(time.time() - overall_start_time) / 60:.2f} minutes")
