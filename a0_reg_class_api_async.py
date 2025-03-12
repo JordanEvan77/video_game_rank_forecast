@@ -165,10 +165,11 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     sampled_df = loop.run_until_complete(get_summoner_list(force=False))
     run_date = datetime.datetime.today().strftime("%m-%d-%Y")
+    run_date = '03-06-2025'
     loop.run_until_complete(get_match_details(sampled_df, run_date, force=False))
 
 
-## FULL RUN SUCCESS ON 3/6 with ALL items, no further sampling needed!
+## FULL RUN SUCCESS ON 3/11 with ALL items, no further sampling needed!
 
 #THis async is more of a proof of concept, it cleans up the code base, and allows for a much
 # higher rate of retrieval. The API can only handle 50 requests a minute, so this async process
