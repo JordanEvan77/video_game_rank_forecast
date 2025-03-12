@@ -68,4 +68,5 @@ if __name__ == '__main__':
 
 
 
-#TODO: Performance is too high, review baseline model
+#TODO: Performance is too high, review baseline model with full dataset, should be mroe
+# believeable accuracy

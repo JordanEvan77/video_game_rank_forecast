@@ -12,6 +12,8 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import accuracy_score
 from imblearn.over_sampling import SMOTE
 from sklearn.impute import KNNImputer
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from video_game_rank_forecast.a0_reg_class_api_call import tiers_list
@@ -42,18 +44,17 @@ def convert_rank_to_int():
     :return:
     '''
 
-    #TODO: Just read in the full set of summoner IDS from async:
-    #video_game_rank_forecast\data\all_tier_summoner_ids.csv!
-    rank_df = pd.read_csv('video_game_rank_forecast\data\\all_tier_summoner_ids.csv')
-    tier_values = {'Iron': 1000, 'Bronze': 2000, 'Silver': 3000, 'Gold': 4000, 'Platinum': 5000,
-        'Diamond': 6000}
-    rank_values = {'IV': 100, 'III': 200, 'II': 300, 'I': 400 #TODO: isn't there a rank 5?
-    }
-    tier_value = tier_values[tier]
-    rank_value = rank_values[rank]
-    final_value = tier_value + rank_value + lp
+    rank_df = pd.read_csv(dir_base + 'data\\all_tier_summoner_ids.csv')
+    tier_dict = {'IRON': 1000, 'BRONZE': 2000, 'SILVER': 3000, 'GOLD': 4000, 'PLATINUM': 5000,
+        'DIAMOND': 6000}
+    rank_dict = {'IV': 100, 'III': 200, 'II': 300, 'I': 400}
+    rank_df['final_rank'] = rank_df.apply(lambda row: tier_dict[row['tier']] +
+                                                      rank_dict[row['rank']] +
+                                                      int(row['LP']), axis=1)
+    # this is now a continuous target
 
-    return final_value
+    return rank_df[['summoner_id', 'final_rank']].sort_values(
+        by='final_rank', ascending=False).drop_duplicates(keep='first')#final_value
 
 
 def agg_for_reg_task(final_df, int_cols, float_cols): # this is different than
@@ -77,28 +78,30 @@ def agg_for_reg_task(final_df, int_cols, float_cols): # this is different than
         print('dropping columns', final_df.shape)
 
     #Get max rank:
-    rank_df = convert_rank_to_int() # TODO: Work on this first above
+    rank_df = convert_rank_to_int() #
+
+    #merge
+    merge_df = pd.merge(final_df, rank_df, how='inner', on='summoner_id') # will drop folks
+    # without a final rank
+    print('goes from :', final_df.shape[0], merge_df.shape[0])
 
     # Now do agg
     print('aggregating for regression')
     #Reset Index to get ID back
-    final_grp = final_df.groupby(['summoner_id']).mean()
+    final_grp = merge_df.groupby(['summoner_id', 'final_rank']).mean()
 
     # are there a couple that would be interesting to get the max from? To show off their most
     # impressive game?
 
 
+    X_cols = [i for i in final_grp.columns if i not in ['final_rank', 'summoner_id', 'summonerid']]
+    X = final_grp[X_cols]
+    y = final_grp['final_rank']
 
-    #TODO: After agg, begin working on this:
-    X_cols = [i for i in final_grp.columns if i not in ['win', 'summoner_id', 'summonerid']]
-    X = final_df[X_cols]
-    y = final_df['win']
-
-    # LDA using to reduce dimensionality for binary classification
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
     df_list = [X_train, X_test]  # no need to impute y
 
-    # impute
+    # impute?
     for idx, num_df in enumerate(df_list):
         i = 0
         for col in impute_nums:
@@ -106,8 +109,9 @@ def agg_for_reg_task(final_df, int_cols, float_cols): # this is different than
             print(i, col)
             median = num_df[col].median()
             num_df[col] = num_df[col].fillna(median)
-        df_list[idx] = drop_outliers(num_df, num_cols, threshold=1.5)  # TODO: The losses may be
-        # too large here, may want to impute!
+        df_list[idx] = drop_outliers(num_df, num_cols, threshold=1.5)
+    #TODO: review this to see if there any worth imputing instead
+
 
     # Do scaling
     X_train, X_test = df_list
@@ -121,12 +125,27 @@ def agg_for_reg_task(final_df, int_cols, float_cols): # this is different than
 
 
     #Dimensionality reduction?
+    pca = PCA()
+    pca.fit(X_train)
 
+    cumulative_explained_variance = np.cumsum(pca.explained_variance_ratio_)
+    num_components = np.argmax(cumulative_explained_variance >= 0.90) + 1
+    print('90% variance is captured at', num_components)
 
-    return X_train_reduc, X_test_reduc, X_train, X_test, y_train, y_test
+    plt.plot(range(1, len(pca.explained_variance_ratio_) + 1),
+             pca.explained_variance_ratio_.cumsum(), marker='o')
+    plt.xlabel('Number of Components')
+    plt.ylabel('Cumulative Explained Variance')
+    plt.show()
 
+    #pick number of componnets if the graph looks right
+    pca_final = PCA(n_components=num_components)
+    pca_final.fit(X_train)
 
-final_rank = '' # will need to read in from original dataset and use funciton converter
+    X_train_pca = pca_final.transform(X_train)
+    X_test_pca = pca_final.transform(X_test)
+
+    return X_train_pca, X_test_pca, X_train, X_test, y_train, y_test
 
 
 
