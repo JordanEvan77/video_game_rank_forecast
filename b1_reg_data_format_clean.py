@@ -88,7 +88,7 @@ def agg_for_reg_task(final_df, int_cols, float_cols): # this is different than
     # Now do agg
     print('aggregating for regression')
     #Reset Index to get ID back
-    final_grp = merge_df.groupby(['summoner_id', 'final_rank']).mean()
+    final_grp = merge_df.groupby(['summoner_id', 'final_rank']).mean().reset_index(drop=False)
 
     # are there a couple that would be interesting to get the max from? To show off their most
     # impressive game?
@@ -110,7 +110,7 @@ def agg_for_reg_task(final_df, int_cols, float_cols): # this is different than
             median = num_df[col].median()
             num_df[col] = num_df[col].fillna(median)
         df_list[idx] = drop_outliers(num_df, num_cols, threshold=1.5)
-    #TODO: review this to see if there any worth imputing instead
+    #TODO: lots of rows lost, will need to review
 
 
     # Do scaling
@@ -140,7 +140,7 @@ def agg_for_reg_task(final_df, int_cols, float_cols): # this is different than
 
     #pick number of componnets if the graph looks right
     pca_final = PCA(n_components=num_components)
-    pca_final.fit(X_train)
+    pca_final.fit(X_train) # only 3 PCs needed
 
     X_train_pca = pca_final.transform(X_train)
     X_test_pca = pca_final.transform(X_test)
@@ -187,9 +187,10 @@ if __name__ == '__main__':
 
 
     #TODO: All numeric cleaning will be done in the below function, since I have to agg it first
-    X_train_reduc, X_test_reduc, X_train, X_test, y_train, y_test = agg_for_reg_task(cat_df, int_cols, float_cols)
+    X_train_pca, X_test_pca, X_train, X_test, y_train, y_test = agg_for_reg_task(cat_df,
+                                                                                 int_cols, float_cols)
 
 
     #TODO: once everything is at the right aggregated level, with the regression target isolated,
     # then go ahead and save
-    save_out_format(X_train_reduc, X_test_reduc, X_train, X_test, y_train, y_test, task='reg')
+    save_out_format(X_train_pca, X_test_pca, X_train, X_test, y_train, y_test, task='reg')
