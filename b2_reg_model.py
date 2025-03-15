@@ -27,3 +27,4 @@ def run_rf(X_train, X_test, y_train, y_test):
     rf_mod = RandomForestRegressor()
 
 
+# USE CURRENT DATASET TO RUN BASE MODELS

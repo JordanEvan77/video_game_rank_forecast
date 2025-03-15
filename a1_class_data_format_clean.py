@@ -620,7 +620,7 @@ def save_out_format(X_train_lda, X_test_lda, X_train, X_test, y_train, y_test, t
 if __name__ == '__main__':
     print('start!')
     start_time = time.time()
-    past_run_date = '01-01-2025'
+    past_run_date = '03-06-2025'
 
     parquet_high_name = dir_base + f"data/class_raw_data_{past_run_date}"
 

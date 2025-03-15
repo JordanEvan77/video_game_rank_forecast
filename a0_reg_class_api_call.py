@@ -50,8 +50,10 @@ def get_summoner_list(sample_size, force):
             #TODO: use a temporary break, remove:
             #if page == sample_size:
                 #break
-
-        sampled_summoners = random.sample(summoners_all_pages, min(len(summoners_all_pages),
+        if sample_size =='max':
+            sampled_summoners = summoners_all_pages
+        else:
+            sampled_summoners = random.sample(summoners_all_pages, min(len(summoners_all_pages),
                                                                    sample_size))
         sampled_df = pd.DataFrame(sampled_summoners)
         final_smapled_df = pd.concat([final_smapled_df, sampled_df])
@@ -209,7 +211,7 @@ if __name__ == '__main__':
 
 
     print('start!')
-    sampled_df = get_summoner_list(sample_size=2_000, force=False)
+    sampled_df = get_summoner_list(sample_size='max', force=False)
     run_date = datetime.datetime.today().strftime("%m-%d-%Y")
     run_date = "01-30-2025"
     get_match_details(sampled_df, run_date, force=False)
