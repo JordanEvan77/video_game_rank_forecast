@@ -75,6 +75,9 @@ def get_common_columns(files):
             common_columns = set(df.columns)
         else:
             common_columns.intersection_update(df.columns)
+        if len(common_columns) ==0:
+            print('ERROR', filepath)
+            raise ValueError(f'Invalid Bad File {filepath}')
     return list(common_columns)
 
 def read_with_common_columns(filepath, common_columns):
