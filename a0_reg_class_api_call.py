@@ -213,5 +213,5 @@ if __name__ == '__main__':
     print('start!')
     sampled_df = get_summoner_list(sample_size='max', force=False)
     run_date = datetime.datetime.today().strftime("%m-%d-%Y")
-    run_date = "01-30-2025"
+    run_date = "03-14-2025"
     get_match_details(sampled_df, run_date, force=False)

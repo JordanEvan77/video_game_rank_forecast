@@ -532,6 +532,10 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
         final_df = final_df.drop(columns=drop_nums)
         print('dropping columns', final_df.shape)
 
+    # check for duplicates
+    print('count of duplicates:', len(final_df[final_df.duplicated()]))
+    if len(final_df[final_df.duplicated()]) > 0:
+        raise ValueError(f'There are {len(final_df[final_df.duplicated()])} duplicated rows in the DataFrame.')
 
     X_cols = [i for i in final_df.columns if i not in ['win', 'summoner_id', 'summonerid']]
     X = final_df[X_cols]
@@ -620,7 +624,7 @@ def save_out_format(X_train_lda, X_test_lda, X_train, X_test, y_train, y_test, t
 if __name__ == '__main__':
     print('start!')
     start_time = time.time()
-    past_run_date = '03-06-2025'
+    past_run_date = '03-14-2025'
 
     parquet_high_name = dir_base + f"data/class_raw_data_{past_run_date}"
 
