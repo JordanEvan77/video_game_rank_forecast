@@ -37,7 +37,7 @@ def complex_read_in(parquet_high_name, tiers_list, common_columns, start_time):
             # now batch read:
             df = flatten_and_reduce_df(df, start_time)
             df_list.append(df)
-        break #just for testing
+            #break #just for testing
     return pd.concat(df_list, axis=0)
 
 
@@ -239,8 +239,7 @@ def flatten_and_reduce_df(start_df, start_time):
         #the 'teams' +'objectives' columns are interesting, but I only want the ones with the team
         # the  # summoner  # is on, using 'teamId'. Use apply to get the correct team id
         team_id_col = [i for i in first_keep_partic_cols if '_teamId' in i][0]
-        temp['team_id_num'] = temp[team_id_col] # TODO: Loop and do this later? so that it
-        # selects only the needed matching teams_ cols with interesting info
+        temp['team_id_num'] = temp[team_id_col]
         # now rename columns:
         rename_dict = {k: k.replace(f'participants_{i}_', '') for k in first_keep_partic_cols}
         temp = temp.rename(columns = rename_dict)
@@ -661,3 +660,4 @@ if __name__ == '__main__':
 
 # The async data is from 2-3-25
 
+#TODO: Could always do impute if dropping too many
