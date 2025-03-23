@@ -110,13 +110,11 @@ def get_sample_ids(parquet_high_name, sampled_df_tier, force, min_id, max_id):
         #The above needs to be allowed to be empty, so that it can skip the following:
 
         print('got common columns')
+        old_summoners_id = []
         for filepath in parquet_files:
             df = read_with_common_columns(filepath, common_columns)
-            aligned_dfs.append(df)
+            old_summoners_id.append(df.summoner_id.unique().tolist())
 
-        combined_df = pd.concat(aligned_dfs, axis=0)
-
-        old_summoners_id = combined_df.summoner_id.unique()
         print('already saved ids read in:', len(old_summoners_id))
         min_id += len(old_summoners_id)
         max_id += len(old_summoners_id)
