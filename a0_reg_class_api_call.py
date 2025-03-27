@@ -8,6 +8,7 @@ import time
 import random
 import datetime
 import os
+import json
 import pyarrow.parquet as pq
 import pyarrow as pa
 tiers_list = ['IRON', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND']
@@ -161,8 +162,11 @@ def get_match_details(sampled_df, run_date, force=True):
             time.sleep(1)
             url_matchlist = f"https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?startTime={start_date}&endTime={end_date}"
             response_matchlist = requests.get(url_matchlist, headers=headers)
-            match_ids = response_matchlist.json()
-
+            try:
+                match_ids = response_matchlist.json()
+            except json.JSONDecodeError:
+                print('skipping this summoner')
+                continue
             url_match = f"https://americas.api.riotgames.com/lol/match/v5/matches/"
             print('checking matches')
             for match_id in match_ids:
