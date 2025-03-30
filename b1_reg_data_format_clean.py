@@ -126,7 +126,7 @@ def agg_for_reg_task(final_df, int_cols, float_cols): # this is different than
 
     #Dimensionality reduction?
     pca = PCA()
-    pca.fit(X_train)
+    pca.fit(X_train_standardized)
 
     cumulative_explained_variance = np.cumsum(pca.explained_variance_ratio_)
     num_components = np.argmax(cumulative_explained_variance >= 0.90) + 1
@@ -140,12 +140,12 @@ def agg_for_reg_task(final_df, int_cols, float_cols): # this is different than
 
     #pick number of componnets if the graph looks right
     pca_final = PCA(n_components=num_components)
-    pca_final.fit(X_train) # only 3 PCs needed
+    pca_final.fit(X_train_standardized) # only 3 PCs needed
 
-    X_train_pca = pca_final.transform(X_train)
-    X_test_pca = pca_final.transform(X_test)
+    X_train_pca = pca_final.transform(X_train_standardized)
+    X_test_pca = pca_final.transform(X_test_standardized)
 
-    return X_train_pca, X_test_pca, X_train, X_test, y_train, y_test
+    return X_train_pca, X_test_pca, X_train_standardized, X_test_standardized, y_train, y_test
 
 
 
@@ -183,17 +183,14 @@ if __name__ == '__main__':
 
 
     cat_df = categorical_cleaning(start_df, cat_cols)
-    #TODO: make sure the categorical cleaning looks right
 
 
-    #TODO: All numeric cleaning will be done in the below function, since I have to agg it first
     X_train_pca, X_test_pca, X_train, X_test, y_train, y_test = agg_for_reg_task(cat_df,
                                                                                  int_cols, float_cols)
 
-
-    #TODO: once everything is at the right aggregated level, with the regression target isolated,
-    # then go ahead and save
     save_out_format(start_time, X_train_pca, X_test_pca, X_train, X_test, y_train, y_test,
                     task='reg', past_run_date=past_run_date)
 
+
+# completed, ready for larger run on full dataset
 
