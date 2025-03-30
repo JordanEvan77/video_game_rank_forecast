@@ -193,4 +193,7 @@ if __name__ == '__main__':
 
     #TODO: once everything is at the right aggregated level, with the regression target isolated,
     # then go ahead and save
-    save_out_format(X_train_pca, X_test_pca, X_train, X_test, y_train, y_test, task='reg')
+    save_out_format(X_train_pca, X_test_pca, X_train, X_test, y_train, y_test, task='reg',
+                    past_run_date=past_run_date)
+
+
