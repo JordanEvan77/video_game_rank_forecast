@@ -94,4 +94,8 @@ if __name__ == '__main__':
 
     deep_learn_on_normal(X_train, X_test, y_train, y_test)
 
-#TODO: I could always do a deep learning net, and create more synthetic data using a GAN if I wanted
+#TODO: I could always do a deep learning net, and create more synthetic data using a GAN if I
+# wanted
+
+# TODO: Once these are performing well, write up comparison of the model, and process to tune and
+#  debug issues encountered.
