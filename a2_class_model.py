@@ -156,6 +156,7 @@ if __name__ == '__main__':
 
 #TODO: it is important to find out which items are contributing to the models high accuracy,
 # and determine if the items are data leak of sorts, and should be removed. Since this is a
-# coaching mechanism, there are things teh player can't control .
+# coaching mechanism, there are things teh player can't control . So do a correlation matrix,
+# or look at feature importance further.
 
 

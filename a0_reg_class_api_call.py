@@ -11,7 +11,7 @@ import os
 import json
 import pyarrow.parquet as pq
 import pyarrow as pa
-tiers_list = ['IRON', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND']
+tiers_list = ['BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'IRON']
 
 overall_start_time = time.time()
 
