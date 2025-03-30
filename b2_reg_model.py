@@ -60,21 +60,34 @@ def run_rf(X_train, X_test, y_train, y_test):
     param_grid = {
         'n_estimators': [100, 200, 300],
         'max_depth': [None, 10, 20, 30],
-        'minsamplessplit': [2, 5, 10],
-        'minsamplesleaf': [1, 2, 4],
-        'max_features': ['auto', 'sqrt', 'log2']
+        'min_samples_split': [2, 5, 10],
+        'min_samples_leaf': [1, 2, 4],
+            'max_features': ['auto', 'sqrt', 'log2', None]
     }
 
     gridsearch = GridSearchCV(estimator=tune_model, param_grid=param_grid,
-                              scoring='meansquarederror',
+                              scoring='neg_mean_squared_error',
                               cv=5, n_jobs=-1, verbose=5)
-    gridsearch.fit(X_train, y_train)
+    gridsearch.fit(X_train, y_train.values.ravel())
     best_params = gridsearch.best_params_
     best_score = gridsearch.best_score_
 
     print('the best parameters are:', best_params)
-    final_rf = RandomForestRegressor(best_params) #**adjust formating
+    final_rf = RandomForestRegressor(max_depth=best_params['max_depth'],
+                                     max_features=best_params['max_features'],
+                                     min_samples_leaf=best_params['min_samples_leaf'],
+                                     min_samples_split=best_params['min_samples_split'],
+                                     n_estimators=best_params['n_estimators'])
 
+    final_rf.fit(X_train, y_train)
+    rf_final_pred = final_rf.predict(X_test)
+
+    mse = mean_squared_error(y_test, rf_final_pred)
+    mae = mean_absolute_error(y_test, rf_final_pred)
+    r2 = r2_score(y_test, rf_final_pred)
+
+    print('Tuned random forest regression performance. MSE:', mse, 'MAE:', mae, 'r-squared:',
+          r2)
 
     # TODO:Feature importance, analyze what matters and why, do write up
     feature_importances = pd.Series(final_rf.feature_importances_, index=X_train.columns)
@@ -111,3 +124,12 @@ if __name__ == '__main__':
 
     # these models should perform well enough, but bewared performance that is too high.
     # move onto neurel network exploration after.
+
+    #TODO: still need to do findings write up in code!
+
+
+# baseline linear regression model has MSE: 1072803.1083816965 and r squared: 0.3347465228276538
+# and the residuals do have homoskedasticity, which is good
+
+#TODO: performance is really bad on RF, need to check what is going? May need to do feature
+# selection  based on feature importance, and then re run the model? focus on class first
