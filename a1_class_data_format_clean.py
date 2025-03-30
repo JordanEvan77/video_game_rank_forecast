@@ -601,7 +601,8 @@ def final_transforms_save_out(final_df, int_cols, float_cols):
 
 #TODO: I should also run it on the full dataset instead of the half set!
 
-def save_out_format(X_train_lda, X_test_lda, X_train, X_test, y_train, y_test, task='class',
+def save_out_format(start_time, X_train_lda, X_test_lda, X_train, X_test, y_train, y_test,
+                    task='class',
                     past_run_date=None):
     os.makedirs(dir_base + f"data/{task}_clean_data_{past_run_date}", exist_ok=True)
 

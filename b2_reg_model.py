@@ -8,6 +8,7 @@ import pickle
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 import matplotlib.pyplot as plt
+from sklearn.model_selection import GridSearchCV
 
 start_time = time.time()
 
@@ -55,7 +56,38 @@ def run_rf(X_train, X_test, y_train, y_test):
           r2)
 
     # now do grid search typical tuning
+    tune_model = RandomForestRegressor()
+    param_grid = {
+        'n_estimators': [100, 200, 300],
+        'max_depth': [None, 10, 20, 30],
+        'minsamplessplit': [2, 5, 10],
+        'minsamplesleaf': [1, 2, 4],
+        'max_features': ['auto', 'sqrt', 'log2']
+    }
 
+    gridsearch = GridSearchCV(estimator=tune_model, param_grid=param_grid,
+                              scoring='meansquarederror',
+                              cv=5, n_jobs=-1, verbose=5)
+    gridsearch.fit(X_train, y_train)
+    best_params = gridsearch.best_params_
+    best_score = gridsearch.best_score_
+
+    print('the best parameters are:', best_params)
+    final_rf = RandomForestRegressor(best_params) #**adjust formating
+
+
+    # TODO:Feature importance, analyze what matters and why, do write up
+    feature_importances = pd.Series(final_rf.feature_importances_, index=X_train.columns)
+    print("Feature Importances:")
+    print(feature_importances.sort_values(ascending=False))
+
+    # Plot
+    plt.bar(feature_importances)
+    plt.xlabel("Features")
+    plt.ylabel("Importance")
+    plt.title("Feature Importances")
+    plt.show()
+    #higher bars means more important
 
 
 if __name__ == '__main__':
@@ -72,3 +104,10 @@ if __name__ == '__main__':
     X_test_reduc = pd.read_parquet(dir_base + f"data/reg_clean_data"
                                             f"_{past_run_date}/x_test_reduc.parquet")
     print('final read in complete time:', (time.time() - start_time) / 60)
+
+    run_lin_reg(X_train, X_test, y_train, y_test)
+
+    run_rf(X_train, X_test, y_train, y_test)
+
+    # these models should perform well enough, but bewared performance that is too high.
+    # move onto neurel network exploration after.

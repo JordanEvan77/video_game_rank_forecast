@@ -8,11 +8,15 @@ def set_up_gan():
     print('start gan')
 
 
-
+def deep_learn_on_normal():
+    #now take the full dataset and start on a shallow net, make deeper
+    # once that works well do it on gan
+    print('start net')
 
 
 def deep_learn_on_gan():
     #now take the full dataset and start on a shallow net, make deeper
+    # once that works well do it on gan
     print('start net')
 
 
